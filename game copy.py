@@ -45,37 +45,43 @@ class CharacterSelectionScreen(Screen):
         # Grid Layout สำหรับแสดงตัวละคร
         grid = GridLayout(cols=3, spacing=10, padding=10)
 
-        # รูปตัวละคร (ระบุไฟล์รูป)
+        # รูปตัวละคร (ระบุไฟล์รูป) พร้อมข้อมูลเกี่ยวกับสิ่งที่ทำให้ได้คะแนนบวก
         self.characters = [
             {
                 "image": r"c:\Users\Acer\Downloads\\chinj.png",
                 "name": "Shinchan",
                 "info": "A brave warrior.",
+                "bonus": "Increased defense for bravery in battle.",
             },
             {
                 "image": r"C:\Users\Acer\Downloads\\kasaj.png",
                 "name": "Kasama",
                 "info": "A stealthy assassin.",
+                "bonus": "High attack power due to stealth tactics.",
             },
             {
                 "image": r"C:\Users\Acer\Downloads\\nenej.png",
                 "name": "Nene",
                 "info": "A skilled mage.",
+                "bonus": "Increased magic damage from intense training.",
             },
             {
                 "image": r"C:\Users\Acer\Downloads\\bowwj.png",
                 "name": "Bow jang",
                 "info": "An archer with great aim.",
+                "bonus": "Bonus damage for precise shots.",
             },
             {
                 "image": r"C:\Users\Acer\Downloads\\masaj.png",
                 "name": "Masao",
                 "info": "A master of swords.",
+                "bonus": "Bonus defense and attack when using a sword.",
             },
             {
                 "image": r"c:\Users\Acer\Downloads\\ij.png",
                 "name": "I jang",
                 "info": "A swift and cunning rogue.",
+                "bonus": "High evasion rate and critical hit chance.",
             },
         ]
 
@@ -104,10 +110,12 @@ class CharacterDetailsScreen(Screen):
         self.image = Image()
         self.name_label = Button(size_hint=(None, None), size=(300, 50), font_size=24)
         self.info_label = Button(size_hint=(None, None), size=(300, 50), font_size=18)
+        self.bonus_label = Button(size_hint=(None, None), size=(300, 50), font_size=16)
 
         self.layout.add_widget(self.image)
         self.layout.add_widget(self.name_label)
         self.layout.add_widget(self.info_label)
+        self.layout.add_widget(self.bonus_label)
 
         self.add_widget(self.layout)
 
@@ -116,6 +124,7 @@ class CharacterDetailsScreen(Screen):
         self.image.source = character["image"]
         self.name_label.text = f"Name: {character['name']}"
         self.info_label.text = f"Info: {character['info']}"
+        self.bonus_label.text = f"Bonus: {character['bonus']}"  # แสดงข้อมูลโบนัส
 
 
 class MyGameApp(App):

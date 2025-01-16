@@ -47,12 +47,12 @@ class CharacterSelectionScreen(Screen):
 
         # รูปตัวละคร (ระบุไฟล์รูป)
         characters = [
-            r"C:\Users\Acer\Downloadsฃฃ316e71bd-0f12-47d5-ad1f-6a11b0a4121f.jpg",
-            r"C:\Users\Acer\Downloads\\kasama.png",
+            r"c:\Users\Acer\Downloads\\chinj.png",
+            r"C:\Users\Acer\Downloads\\kasaj.png",
             r"C:\Users\Acer\Downloads\\nenej.png",
             r"C:\Users\Acer\Downloads\\bowwj.png",
             r"C:\Users\Acer\Downloads\\masaj.png",
-            r"D:\\game\\char6.jpg",
+            r"c:\Users\Acer\Downloads\\ij.png",
         ]
 
         for char in characters:

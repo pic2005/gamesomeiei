@@ -25,7 +25,7 @@ class StartGameApp(App):
         return layout
 
     def start_game(self, instance):
-        print("Game Started!")
+        print("Game Started! ")
 
 
 if __name__ == "__main__":

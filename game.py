@@ -5,6 +5,7 @@ from kivy.uix.gridlayout import GridLayout
 from kivy.uix.screenmanager import ScreenManager, Screen
 from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.label import Label
+from kivy.graphics import Color, Rectangle
 
 
 class MainMenuScreen(Screen):
@@ -116,7 +117,7 @@ class CharacterDetailsScreen(Screen):
         # ชื่อ
         self.name_label = Label(
             text="Name: ",
-            font_size=18,
+            font_size=23,
             size_hint=(1, None),
             height=40,
             halign="left",
@@ -128,7 +129,7 @@ class CharacterDetailsScreen(Screen):
         # ข้อมูล
         self.info_label = Label(
             text="Info: ",
-            font_size=16,
+            font_size=23,
             size_hint=(1, None),
             height=40,
             halign="left",
@@ -140,14 +141,27 @@ class CharacterDetailsScreen(Screen):
         # โบนัส
         self.bonus_label = Label(
             text="Bonus: ",
-            font_size=14,
+            font_size=23,
             size_hint=(1, None),
             height=40,
-            halign="left",
+            halign="center",  # จัดข้อความตรงกลาง
             valign="middle",
             text_size=(None, None),
         )
         self.layout.add_widget(self.bonus_label)
+
+        # ใช้ canvas เพื่อเพิ่มกรอบสี
+        with self.canvas.before:
+            Color(0, 1, 0, 1)  # สีเขียว
+            self.rect_name = Rectangle(
+                pos=self.name_label.pos, size=self.name_label.size
+            )
+            self.rect_info = Rectangle(
+                pos=self.info_label.pos, size=self.info_label.size
+            )
+            self.rect_bonus = Rectangle(
+                pos=self.bonus_label.pos, size=self.bonus_label.size
+            )
 
         self.add_widget(self.layout)
 
@@ -157,6 +171,14 @@ class CharacterDetailsScreen(Screen):
         self.name_label.text = f"Name: {character['name']}"
         self.info_label.text = f"Info: {character['info']}"
         self.bonus_label.text = f"Bonus: {character['bonus']}"
+
+        # อัปเดตตำแหน่งและขนาดของกรอบ
+        self.rect_name.pos = self.name_label.pos
+        self.rect_name.size = self.name_label.size
+        self.rect_info.pos = self.info_label.pos
+        self.rect_info.size = self.info_label.size
+        self.rect_bonus.pos = self.bonus_label.pos
+        self.rect_bonus.size = self.bonus_label.size
 
 
 class MyGameApp(App):

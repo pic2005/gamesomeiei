@@ -5,7 +5,6 @@ from kivy.uix.gridlayout import GridLayout
 from kivy.uix.screenmanager import ScreenManager, Screen
 from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.label import Label
-from kivy.graphics import Color, Rectangle
 from kivy.uix.widget import Widget
 from kivy.clock import Clock
 from random import randint
@@ -53,37 +52,37 @@ class CharacterSelectionScreen(Screen):
         # รูปตัวละคร (ระบุไฟล์รูป) พร้อมข้อมูลเกี่ยวกับสิ่งที่ทำให้ได้คะแนนบวก
         self.characters = [
             {
-                "image": r"c:\Users\Acer\Downloads\\chinj.png",
+                "image": r"c:\\Users\\Acer\\Downloads\\chinj.png",
                 "name": "Shinchan",
                 "info": "A 5-year-old boy who is naughty, likes to prank others, likes to dance butt cheek poses.",
                 "bonus": "Choco Bee, Action Kamen.",
             },
             {
-                "image": r"C:\Users\Acer\Downloads\\kasaj.png",
+                "image": r"C:\\Users\\Acer\\Downloads\\kasaj.png",
                 "name": "Kasama",
                 "info": "AShin-chan's best friend who is smart and often acts like an adult.",
                 "bonus": "Books, Fancy Eateries and Good Looking.",
             },
             {
-                "image": r"C:\Users\Acer\Downloads\\nenej.png",
+                "image": r"C:\\Users\\Acer\\Downloads\\nenej.png",
                 "name": "Nene",
                 "info": "A girl who looks neat but actually secretly has a deep malice.",
                 "bonus": "tea, stuffed rabbits",
             },
             {
-                "image": r"C:\Users\Acer\Downloads\\bowwj.png",
+                "image": r"C:\\Users\\Acer\\Downloads\\bowwj.png",
                 "name": "Bow jang",
                 "info": "The boy is laconic and cute, and unique in that he always has a runny nose.",
                 "bonus": "Butter bread, stones.",
             },
             {
-                "image": r"C:\Users\Acer\Downloads\\masaj.png",
+                "image": r"C:\\Users\\Acer\\Downloads\\masaj.png",
                 "name": "Masao",
                 "info": "A shy boy who is often bullied.",
                 "bonus": "Drawing, Snack",
             },
             {
-                "image": r"c:\Users\Acer\Downloads\\ij.png",
+                "image": r"c:\\Users\\Acer\\Downloads\\ij.png",
                 "name": "I jang",
                 "info": "A rich girl who likes Shin-chan.",
                 "bonus": "Cake, Princess",
@@ -103,9 +102,86 @@ class CharacterSelectionScreen(Screen):
         self.add_widget(grid)
 
     def select_character(self, character):
-        # ส่งข้อมูลตัวละครไปยังหน้าจอถัดไป
+        # ส่งข้อมูลตัวละครไปยังหน้าจอการแสดงรายละเอียด
+        self.manager.current = "character_details"
+        self.manager.get_screen("character_details").show_character_details(character)
+
+
+class CharacterDetailsScreen(Screen):
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+
+        self.layout = BoxLayout(orientation="vertical", spacing=20, padding=20)
+
+        # รูปภาพตัวละคร
+        self.image = Image(size_hint=(1, 0.6))  # ปรับให้รูปภาพใหญ่ขึ้น
+        self.layout.add_widget(self.image)
+
+        # ชื่อ
+        self.name_label = Label(
+            text="Name: ",
+            font_size=23,
+            size_hint=(1, None),
+            height=40,
+            halign="left",
+            valign="middle",
+            text_size=(None, None),
+        )
+        self.layout.add_widget(self.name_label)
+
+        # ข้อมูล
+        self.info_label = Label(
+            text="Info: ",
+            font_size=23,
+            size_hint=(1, None),
+            height=40,
+            halign="left",
+            valign="middle",
+            text_size=(None, None),
+        )
+        self.layout.add_widget(self.info_label)
+
+        # โบนัส
+        self.bonus_label = Label(
+            text="Bonus: ",
+            font_size=23,
+            size_hint=(1, None),
+            height=40,
+            halign="center",  # จัดข้อความตรงกลาง
+            valign="middle",
+            text_size=(None, None),
+        )
+        self.layout.add_widget(self.bonus_label)
+
+        # ปุ่ม Start Game
+        start_button = Button(
+            text="Start Game",
+            size_hint=(None, None),
+            size=(200, 80),
+            pos_hint={"center_x": 0.5, "y": 0},
+            font_size=24,
+            background_color=(0.2, 0.6, 1, 1),  # สีน้ำเงิน
+        )
+        start_button.bind(on_press=self.start_game)
+        self.layout.add_widget(start_button)
+
+        self.add_widget(self.layout)
+
+    def show_character_details(self, character):
+        # แสดงข้อมูลของตัวละคร
+        self.image.source = character["image"]
+        self.name_label.text = f"Name: {character['name']}"
+        self.info_label.text = f"Info: {character['info']}"
+        self.bonus_label.text = f"Bonus: {character['bonus']}"
+
+    def start_game(self, instance):
         self.manager.current = "game_screen"
-        self.manager.get_screen("game_screen").start_game(character)
+        self.manager.get_screen("game_screen").start_game(
+            {
+                "name": self.name_label.text.split(": ")[1],
+                "image": self.image.source,
+            }
+        )
 
 
 class GameScreen(Screen):
@@ -115,29 +191,32 @@ class GameScreen(Screen):
         self.character = None
         self.score = 0
         self.bonus_objects = []
-        self.non_bonus_objects = []
         self.character_bar = None
         self.game_area = None
         self.fall_speed = 3
         self.game_over_label = None
 
     def start_game(self, character):
-        self.character = character
+        self.character = character  # รับข้อมูลตัวละครที่เลือก
         self.score = 0
         self.bonus_objects = []
-        self.non_bonus_objects = []
 
         layout = BoxLayout(orientation="vertical", spacing=10)
         self.game_area = Widget(size_hint=(1, 0.9))
 
         # ตัวละครแทบด้านล่าง
         self.character_bar = Image(
-            source=character["image"],
+            source=self.character["image"],
             size_hint=(None, None),
             size=(100, 100),
             pos_hint={"center_x": 0.5, "y": 0.1},
         )
         self.game_area.add_widget(self.character_bar)
+
+        # ทำให้ตัวละครเลื่อนตามเม้าส์
+        self.character_bar.bind(
+            on_touch_move=lambda instance, touch: self.move_character_bar(touch)
+        )
 
         # Score label
         self.score_label = Label(
@@ -153,44 +232,35 @@ class GameScreen(Screen):
         Clock.schedule_interval(self.falling_objects, 1 / 60)  # 60 FPS
         Clock.schedule_interval(self.update_score, 1)
 
+    def move_character_bar(self, touch):
+        # อัปเดตตำแหน่งตัวละครตามตำแหน่งของเมาส์
+        if 0 <= touch.x <= self.game_area.width - self.character_bar.width:
+            self.character_bar.x = touch.x  # ปรับตำแหน่ง X ของตัวละครให้ตามตำแหน่งของเมาส์
+
     def falling_objects(self, dt):
-        # สร้างวัตถุโบนัสและวัตถุที่ไม่ใช่โบนัส
+        # สร้างโบนัสที่หล่นลงมา
         if randint(1, 100) > 90:
             x = randint(0, self.game_area.width - 50)
             obj = BonusObject(x, self.game_area.height, "bonus", self)
             self.bonus_objects.append(obj)
             self.game_area.add_widget(obj)
 
-        if randint(1, 100) > 70:
-            x = randint(0, self.game_area.width - 50)
-            obj = BonusObject(x, self.game_area.height, "non_bonus", self)
-            self.non_bonus_objects.append(obj)
-            self.game_area.add_widget(obj)
-
         # อัปเดตตำแหน่งของทุกวัตถุ
-        for obj in self.bonus_objects + self.non_bonus_objects:
+        for obj in self.bonus_objects:
             obj.update_position(dt)
+
+        # ลบวัตถุที่หล่นลงมาจนถึงด้านล่าง
+        for obj in self.bonus_objects:
             if obj.y < 0:  # ถ้าวัตถุตกลงไปข้างล่าง
                 self.game_area.remove_widget(obj)
-                if obj.type == "bonus":
-                    self.score -= 10  # ลดคะแนนถ้าตกหล่น
-                else:
-                    self.score += 10  # เพิ่มคะแนนถ้ารับโบนัส
+                self.bonus_objects.remove(obj)
 
         # เช็คการชน
-        for obj in self.bonus_objects + self.non_bonus_objects:
+        for obj in self.bonus_objects:
             if self.character_bar.collide_widget(obj):
-                if obj.type == "bonus":
-                    self.score += 10  # เพิ่มคะแนน
-                else:
-                    self.score -= 10  # ลดคะแนน
-
+                self.score += 10  # เพิ่มคะแนน
                 self.game_area.remove_widget(obj)
-                (
-                    self.bonus_objects.remove(obj)
-                    if obj.type == "bonus"
-                    else self.non_bonus_objects.remove(obj)
-                )
+                self.bonus_objects.remove(obj)
 
     def update_score(self, dt):
         self.score_label.text = f"Score: {self.score}"
@@ -223,6 +293,7 @@ class MyGameApp(App):
         # เพิ่มหน้าจอ
         sm.add_widget(MainMenuScreen(name="menu"))
         sm.add_widget(CharacterSelectionScreen(name="character_selection"))
+        sm.add_widget(CharacterDetailsScreen(name="character_details"))
         sm.add_widget(GameScreen(name="game_screen"))
 
         return sm

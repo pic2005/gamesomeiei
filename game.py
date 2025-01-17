@@ -4,6 +4,7 @@ from kivy.uix.image import Image
 from kivy.uix.gridlayout import GridLayout
 from kivy.uix.screenmanager import ScreenManager, Screen
 from kivy.uix.boxlayout import BoxLayout
+from kivy.uix.label import Label
 
 
 class MainMenuScreen(Screen):
@@ -50,38 +51,38 @@ class CharacterSelectionScreen(Screen):
             {
                 "image": r"c:\Users\Acer\Downloads\\chinj.png",
                 "name": "Shinchan",
-                "info": "A brave warrior.",
-                "bonus": "Increased defense for bravery in battle.",
+                "info": "A 5-year-old boy who is naughty, likes to prank others, likes to dance butt cheek poses.",
+                "bonus": "Choco Bee, Chewing Gum, Action Kamen.",
             },
             {
                 "image": r"C:\Users\Acer\Downloads\\kasaj.png",
                 "name": "Kasama",
-                "info": "A stealthy assassin.",
-                "bonus": "High attack power due to stealth tactics.",
+                "info": "AShin-chan's best friend who is smart and often acts like an adult.",
+                "bonus": "Books, Fancy Eateries and Good Looking.",
             },
             {
                 "image": r"C:\Users\Acer\Downloads\\nenej.png",
                 "name": "Nene",
-                "info": "A skilled mage.",
-                "bonus": "Increased magic damage from intense training.",
+                "info": "A girl who looks neat but actually secretly has a deep malice.",
+                "bonus": "Cakes, tea, stuffed rabbits",
             },
             {
                 "image": r"C:\Users\Acer\Downloads\\bowwj.png",
                 "name": "Bow jang",
-                "info": "An archer with great aim.",
-                "bonus": "Bonus damage for precise shots.",
+                "info": "The boy is laconic and cute, and unique in that he always has a runny nose.",
+                "bonus": "Butter bread, stones.",
             },
             {
                 "image": r"C:\Users\Acer\Downloads\\masaj.png",
                 "name": "Masao",
-                "info": "A master of swords.",
-                "bonus": "Bonus defense and attack when using a sword.",
+                "info": "A shy boy who is often bullied.",
+                "bonus": "Drawing, Snack",
             },
             {
                 "image": r"c:\Users\Acer\Downloads\\ij.png",
                 "name": "I jang",
-                "info": "A swift and cunning rogue.",
-                "bonus": "High evasion rate and critical hit chance.",
+                "info": "A rich girl who likes Shin-chan.",
+                "bonus": "Cake, Princess",
             },
         ]
 
@@ -107,14 +108,45 @@ class CharacterDetailsScreen(Screen):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         self.layout = BoxLayout(orientation="vertical", spacing=20, padding=20)
-        self.image = Image()
-        self.name_label = Button(size_hint=(None, None), size=(300, 50), font_size=24)
-        self.info_label = Button(size_hint=(None, None), size=(300, 50), font_size=18)
-        self.bonus_label = Button(size_hint=(None, None), size=(300, 50), font_size=16)
 
+        # รูปภาพตัวละคร
+        self.image = Image(size_hint=(1, 0.6))  # ปรับให้รูปภาพใหญ่ขึ้น
         self.layout.add_widget(self.image)
+
+        # ชื่อ
+        self.name_label = Label(
+            text="Name: ",
+            font_size=18,
+            size_hint=(1, None),
+            height=40,
+            halign="left",
+            valign="middle",
+            text_size=(None, None),
+        )
         self.layout.add_widget(self.name_label)
+
+        # ข้อมูล
+        self.info_label = Label(
+            text="Info: ",
+            font_size=16,
+            size_hint=(1, None),
+            height=40,
+            halign="left",
+            valign="middle",
+            text_size=(None, None),
+        )
         self.layout.add_widget(self.info_label)
+
+        # โบนัส
+        self.bonus_label = Label(
+            text="Bonus: ",
+            font_size=14,
+            size_hint=(1, None),
+            height=40,
+            halign="left",
+            valign="middle",
+            text_size=(None, None),
+        )
         self.layout.add_widget(self.bonus_label)
 
         self.add_widget(self.layout)
@@ -124,7 +156,7 @@ class CharacterDetailsScreen(Screen):
         self.image.source = character["image"]
         self.name_label.text = f"Name: {character['name']}"
         self.info_label.text = f"Info: {character['info']}"
-        self.bonus_label.text = f"Bonus: {character['bonus']}"  # แสดงข้อมูลโบนัส
+        self.bonus_label.text = f"Bonus: {character['bonus']}"
 
 
 class MyGameApp(App):

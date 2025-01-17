@@ -4,6 +4,7 @@ from kivy.uix.image import Image
 from kivy.uix.gridlayout import GridLayout
 from kivy.uix.screenmanager import ScreenManager, Screen
 from kivy.uix.boxlayout import BoxLayout
+from kivy.uix.label import Label
 
 
 class MainMenuScreen(Screen):
@@ -24,18 +25,18 @@ class MainMenuScreen(Screen):
             text="Play",
             size_hint=(None, None),
             size=(200, 80),
-            pos_hint={"center_x": 0.5, "y": 0},  # ตั้งตำแหน่งที่กลางล่าง
+            pos_hint={"center_x": 0.5, "center_y": 0.1},
             font_size=24,
-            background_color=(0.2, 0.6, 1, 1),  # สีน้ำเงิน
+            background_color=(0.2, 0.6, 1, 1),
         )
         play_button.bind(on_press=self.go_to_character_selection)
         layout.add_widget(play_button)
 
-        # เพิ่ม Layout ที่มีพื้นหลัง
+        # เพิ่ม Layout บนพื้นหลัง
         self.add_widget(layout)
 
     def go_to_character_selection(self, instance):
-        self.manager.current = "character_selection"  # ไปหน้าที่สอง
+        self.manager.current = "character_selection"
 
 
 class CharacterSelectionScreen(Screen):
@@ -45,44 +46,15 @@ class CharacterSelectionScreen(Screen):
         # Grid Layout สำหรับแสดงตัวละคร
         grid = GridLayout(cols=3, spacing=10, padding=10)
 
-        # รูปตัวละคร (ระบุไฟล์รูป) พร้อมข้อมูลเกี่ยวกับสิ่งที่ทำให้ได้คะแนนบวก
+        # รูปตัวละคร พร้อมข้อมูล
         self.characters = [
             {
-                "image": r"c:\Users\Acer\Downloads\\chinj.png",
+                "image": r"c:\Users\Acer\Downloads\chinj.png",
                 "name": "Shinchan",
-                "info": "A brave warrior.",
-                "bonus": "Increased defense for bravery in battle.",
+                "info": "A 5-year-old boy who is naughty, likes to prank others, likes to dance butt cheek poses.",
+                "bonus": "Choco Bee, Chewing Gum, Action Kamen.",
             },
-            {
-                "image": r"C:\Users\Acer\Downloads\\kasaj.png",
-                "name": "Kasama",
-                "info": "A stealthy assassin.",
-                "bonus": "High attack power due to stealth tactics.",
-            },
-            {
-                "image": r"C:\Users\Acer\Downloads\\nenej.png",
-                "name": "Nene",
-                "info": "A skilled mage.",
-                "bonus": "Increased magic damage from intense training.",
-            },
-            {
-                "image": r"C:\Users\Acer\Downloads\\bowwj.png",
-                "name": "Bow jang",
-                "info": "An archer with great aim.",
-                "bonus": "Bonus damage for precise shots.",
-            },
-            {
-                "image": r"C:\Users\Acer\Downloads\\masaj.png",
-                "name": "Masao",
-                "info": "A master of swords.",
-                "bonus": "Bonus defense and attack when using a sword.",
-            },
-            {
-                "image": r"c:\Users\Acer\Downloads\\ij.png",
-                "name": "I jang",
-                "info": "A swift and cunning rogue.",
-                "bonus": "High evasion rate and critical hit chance.",
-            },
+            # เพิ่มตัวละครอื่น ๆ ตามต้องการ
         ]
 
         for char in self.characters:
@@ -94,11 +66,9 @@ class CharacterSelectionScreen(Screen):
             char_button.bind(on_press=lambda instance, c=char: self.select_character(c))
             grid.add_widget(char_button)
 
-        # เพิ่ม GridLayout ที่แสดงตัวละคร
         self.add_widget(grid)
 
     def select_character(self, character):
-        # ส่งข้อมูลตัวละครไปยังหน้าจอถัดไป
         self.manager.current = "character_details"
         self.manager.get_screen("character_details").show_character_details(character)
 
@@ -106,39 +76,24 @@ class CharacterSelectionScreen(Screen):
 class CharacterDetailsScreen(Screen):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
-        self.layout = BoxLayout(orientation="vertical", spacing=20, padding=20)
-        self.image = Image()
-        self.name_label = Button(size_hint=(None, None), size=(300, 50), font_size=24)
-        self.info_label = Button(size_hint=(None, None), size=(300, 50), font_size=18)
-        self.bonus_label = Button(size_hint=(None, None), size=(300, 50), font_size=16)
+        layout = BoxLayout(orientation="vertical", spacing=20, padding=20)
+        self.image = Image(size_hint=(1, 0.6))
+        self.name_label = Label(font_size=24, size_hint=(1, None), height=50)
+        self.info_label = Label(font_size=18, size_hint=(1, None), height=100)
+        self.bonus_label = Label(font_size=16, size_hint=(1, None), height=50)
 
-        self.layout.add_widget(self.image)
-        self.layout.add_widget(self.name_label)
-        self.layout.add_widget(self.info_label)
-        self.layout.add_widget(self.bonus_label)
-
-        self.add_widget(self.layout)
+        layout.add_widget(self.image)
+        layout.add_widget(self.name_label)
+        layout.add_widget(self.info_label)
+        layout.add_widget(self.bonus_label)
+        self.add_widget(layout)
 
     def show_character_details(self, character):
-        # แสดงข้อมูลของตัวละคร
         self.image.source = character["image"]
         self.name_label.text = f"Name: {character['name']}"
         self.info_label.text = f"Info: {character['info']}"
-        self.bonus_label.text = f"Bonus: {character['bonus']}"  # แสดงข้อมูลโบนัส
+        self.bonus_label.text = f"Bonus: {character['bonus']}"
 
 
 class MyGameApp(App):
-    def build(self):
-        # ScreenManager สำหรับจัดการหน้าจอ
-        sm = ScreenManager()
-
-        # เพิ่มหน้าต่างต่าง ๆ
-        sm.add_widget(MainMenuScreen(name="menu"))
-        sm.add_widget(CharacterSelectionScreen(name="character_selection"))
-        sm.add_widget(CharacterDetailsScreen(name="character_details"))
-
-        return sm
-
-
-if __name__ == "__main__":
-    MyGameApp().run()
+   

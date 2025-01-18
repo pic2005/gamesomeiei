@@ -5,6 +5,7 @@ from kivy.uix.gridlayout import GridLayout
 from kivy.uix.screenmanager import ScreenManager, Screen
 from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.label import Label
+from kivy.clock import Clock
 
 
 class MainMenuScreen(Screen):
@@ -120,21 +121,21 @@ class CharacterSelectionScreen(Screen):
         self.info_layout.add_widget(self.info_label)
         self.info_layout.add_widget(self.bonus_label)
 
-        # ปุ่ม Start
-        self.start_button = Button(
+        # เพิ่ม Layout เข้ากับหน้าจอหลัก
+        main_layout.add_widget(grid)
+        main_layout.add_widget(self.info_layout)
+
+        # เพิ่มปุ่ม start
+        start_button = Button(
             text="Start",
             size_hint=(None, None),
             size=(200, 80),
             pos_hint={"center_x": 0.5, "y": 0},  # ตั้งตำแหน่งที่กลางล่าง
             font_size=24,
-            background_color=(0.2, 0.8, 0.2, 1),  # สีเขียว
+            background_color=(0.2, 0.6, 1, 1),  # สีน้ำเงิน
         )
-        self.start_button.bind(on_press=self.go_to_game_screen)
-
-        # เพิ่ม Layout เข้ากับหน้าจอหลัก
-        main_layout.add_widget(grid)
-        main_layout.add_widget(self.info_layout)
-        main_layout.add_widget(self.start_button)
+        start_button.bind(on_press=self.start_countdown)
+        main_layout.add_widget(start_button)
 
         self.add_widget(main_layout)
 
@@ -144,43 +145,45 @@ class CharacterSelectionScreen(Screen):
         self.info_label.text = f"Info: {character['info']}"
         self.bonus_label.text = f"Bonus: {character['bonus']}"
 
-    def go_to_game_screen(self, instance):
-        """ไปที่หน้าจอเกม"""
-        self.manager.current = "game_screen"
+    def start_countdown(self, instance):
+        """ไปหน้าจอนับถอยหลัง"""
+        self.manager.current = "countdown"
+
+
+class CountdownScreen(Screen):
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+
+        # Layout สำหรับการนับถอยหลัง
+        layout = BoxLayout(orientation="vertical", padding=20, spacing=20)
+        self.countdown_label = Label(
+            text="5", font_size=150, size_hint=(1, 1), halign="center", valign="middle"
+        )
+        layout.add_widget(self.countdown_label)
+
+        # เริ่มนับถอยหลังจาก 5
+        self.count = 5
+        Clock.schedule_interval(self.update_countdown, 1)
+
+        self.add_widget(layout)
+
+    def update_countdown(self, dt):
+        """อัปเดตการนับถอยหลัง"""
+        self.count -= 1
+        self.countdown_label.text = str(self.count)
+        if self.count == 0:
+            Clock.unschedule(self.update_countdown)
+            self.manager.current = "game_screen"  # เปลี่ยนไปหน้าจอเกม
 
 
 class GameScreen(Screen):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
-        layout = BoxLayout(orientation="vertical", spacing=10, padding=20)
-
-        # ข้อความแสดงการเริ่มเกม
-        self.game_label = Label(
-            text="Game Started!",
-            font_size=32,
-            size_hint=(1, None),
-            height=100,
-            halign="center",
-        )
-        layout.add_widget(self.game_label)
-
-        # ปุ่มกลับไปที่เมนูหลัก
-        back_button = Button(
-            text="Back to Main Menu",
-            size_hint=(None, None),
-            size=(200, 80),
-            pos_hint={"center_x": 0.5, "y": 0},
-            font_size=24,
-            background_color=(0.8, 0.2, 0.2, 1),
-        )
-        back_button.bind(on_press=self.go_to_main_menu)
-        layout.add_widget(back_button)
-
+        # หน้าจอเกมที่จะให้แสดงผลหลังจากนับถอยหลังเสร็จ
+        layout = BoxLayout(orientation="vertical", padding=20, spacing=20)
+        label = Label(text="Game Started", font_size=50, size_hint=(1, 1))
+        layout.add_widget(label)
         self.add_widget(layout)
-
-    def go_to_main_menu(self, instance):
-        """กลับไปที่หน้าจอเมนูหลัก"""
-        self.manager.current = "menu"
 
 
 class MyGameApp(App):
@@ -190,6 +193,7 @@ class MyGameApp(App):
         # เพิ่มหน้าจอ
         sm.add_widget(MainMenuScreen(name="menu"))
         sm.add_widget(CharacterSelectionScreen(name="character_selection"))
+        sm.add_widget(CountdownScreen(name="countdown"))
         sm.add_widget(GameScreen(name="game_screen"))
 
         return sm

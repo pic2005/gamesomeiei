@@ -5,9 +5,11 @@ from kivy.uix.gridlayout import GridLayout
 from kivy.uix.screenmanager import ScreenManager, Screen
 from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.label import Label
+from kivy.graphics import Color, Rectangle
 from kivy.uix.widget import Widget
 from kivy.clock import Clock
 from random import randint
+from kivy.core.window import Window  # สำหรับตรวจจับการกดปุ่มบนคีย์บอร์ด
 
 
 class MainMenuScreen(Screen):
@@ -52,37 +54,37 @@ class CharacterSelectionScreen(Screen):
         # รูปตัวละคร (ระบุไฟล์รูป) พร้อมข้อมูลเกี่ยวกับสิ่งที่ทำให้ได้คะแนนบวก
         self.characters = [
             {
-                "image": r"c:\\Users\\Acer\\Downloads\\chinj.png",
+                "image": r"c:\Users\Acer\Downloads\\chinj.png",
                 "name": "Shinchan",
                 "info": "A 5-year-old boy who is naughty, likes to prank others, likes to dance butt cheek poses.",
                 "bonus": "Choco Bee, Action Kamen.",
             },
             {
-                "image": r"C:\\Users\\Acer\\Downloads\\kasaj.png",
+                "image": r"C:\Users\Acer\Downloads\\kasaj.png",
                 "name": "Kasama",
                 "info": "AShin-chan's best friend who is smart and often acts like an adult.",
                 "bonus": "Books, Fancy Eateries and Good Looking.",
             },
             {
-                "image": r"C:\\Users\\Acer\\Downloads\\nenej.png",
+                "image": r"C:\Users\Acer\Downloads\\nenej.png",
                 "name": "Nene",
                 "info": "A girl who looks neat but actually secretly has a deep malice.",
                 "bonus": "tea, stuffed rabbits",
             },
             {
-                "image": r"C:\\Users\\Acer\\Downloads\\bowwj.png",
+                "image": r"C:\Users\Acer\Downloads\\bowwj.png",
                 "name": "Bow jang",
                 "info": "The boy is laconic and cute, and unique in that he always has a runny nose.",
                 "bonus": "Butter bread, stones.",
             },
             {
-                "image": r"C:\\Users\\Acer\\Downloads\\masaj.png",
+                "image": r"C:\Users\Acer\Downloads\\masaj.png",
                 "name": "Masao",
                 "info": "A shy boy who is often bullied.",
                 "bonus": "Drawing, Snack",
             },
             {
-                "image": r"c:\\Users\\Acer\\Downloads\\ij.png",
+                "image": r"c:\Users\Acer\Downloads\\ij.png",
                 "name": "I jang",
                 "info": "A rich girl who likes Shin-chan.",
                 "bonus": "Cake, Princess",
@@ -102,86 +104,9 @@ class CharacterSelectionScreen(Screen):
         self.add_widget(grid)
 
     def select_character(self, character):
-        # ส่งข้อมูลตัวละครไปยังหน้าจอการแสดงรายละเอียด
-        self.manager.current = "character_details"
-        self.manager.get_screen("character_details").show_character_details(character)
-
-
-class CharacterDetailsScreen(Screen):
-    def __init__(self, **kwargs):
-        super().__init__(**kwargs)
-
-        self.layout = BoxLayout(orientation="vertical", spacing=20, padding=20)
-
-        # รูปภาพตัวละคร
-        self.image = Image(size_hint=(1, 0.6))  # ปรับให้รูปภาพใหญ่ขึ้น
-        self.layout.add_widget(self.image)
-
-        # ชื่อ
-        self.name_label = Label(
-            text="Name: ",
-            font_size=23,
-            size_hint=(1, None),
-            height=40,
-            halign="left",
-            valign="middle",
-            text_size=(None, None),
-        )
-        self.layout.add_widget(self.name_label)
-
-        # ข้อมูล
-        self.info_label = Label(
-            text="Info: ",
-            font_size=23,
-            size_hint=(1, None),
-            height=40,
-            halign="left",
-            valign="middle",
-            text_size=(None, None),
-        )
-        self.layout.add_widget(self.info_label)
-
-        # โบนัส
-        self.bonus_label = Label(
-            text="Bonus: ",
-            font_size=23,
-            size_hint=(1, None),
-            height=40,
-            halign="center",  # จัดข้อความตรงกลาง
-            valign="middle",
-            text_size=(None, None),
-        )
-        self.layout.add_widget(self.bonus_label)
-
-        # ปุ่ม Start Game
-        start_button = Button(
-            text="Start Game",
-            size_hint=(None, None),
-            size=(200, 80),
-            pos_hint={"center_x": 0.5, "y": 0},
-            font_size=24,
-            background_color=(0.2, 0.6, 1, 1),  # สีน้ำเงิน
-        )
-        start_button.bind(on_press=self.start_game)
-        self.layout.add_widget(start_button)
-
-        self.add_widget(self.layout)
-
-    def show_character_details(self, character):
-        # แสดงข้อมูลของตัวละคร
-        self.image.source = character["image"]
-        self.name_label.text = f"Name: {character['name']}"
-        self.info_label.text = f"Info: {character['info']}"
-        self.bonus_label.text = f"Bonus: {character['bonus']}"
-
-    def start_game(self, instance):
+        # ส่งข้อมูลตัวละครไปยังหน้าจอถัดไป
         self.manager.current = "game_screen"
-        self.manager.get_screen("game_screen").start_game(
-            {
-                "name": self.name_label.text.split(": ")[1],
-                "image": self.image.source,
-            }
-        )
+        self.manager.get_screen("game_screen").start_game(character)
 
 
 class GameScreen(Screen):
@@ -197,8 +122,11 @@ class GameScreen(Screen):
         self.fall_speed = 3
         self.game_over_label = None
 
+        # สั่งให้ฟังก์ชันตรวจจับการกดปุ่มบนคีย์บอร์ด
+        Window.bind(on_key_down=self.on_key_down)
+
     def start_game(self, character):
-        self.character = character  # รับข้อมูลตัวละครที่เลือก
+        self.character = character
         self.score = 0
         self.bonus_objects = []
         self.non_bonus_objects = []
@@ -208,17 +136,15 @@ class GameScreen(Screen):
 
         # ตัวละครแทบด้านล่าง
         self.character_bar = Image(
-            source=self.character["image"],
+            source=character["image"],
             size_hint=(None, None),
             size=(100, 100),
             pos_hint={"center_x": 0.5, "y": 0.1},
         )
         self.game_area.add_widget(self.character_bar)
 
-        # ทำให้ตัวละครเลื่อนตามเม้าส์
-        self.character_bar.bind(
-            on_touch_move=lambda instance, touch: self.move_character_bar(touch)
-        )
+        # เพิ่ม Game Area
+        layout.add_widget(self.game_area)
 
         # Score label
         self.score_label = Label(
@@ -226,17 +152,33 @@ class GameScreen(Screen):
         )
         layout.add_widget(self.score_label)
 
-        # เพิ่ม Game Area
-        layout.add_widget(self.game_area)
+        # เพิ่ม layout
         self.add_widget(layout)
 
         # เริ่มเกม
         Clock.schedule_interval(self.falling_objects, 1 / 60)  # 60 FPS
         Clock.schedule_interval(self.update_score, 1)
 
-    def move_character_bar(self, touch):
-        if 0 <= touch.x <= self.width - self.character_bar.width:
-            self.character_bar.x = touch.x
+    def on_key_down(self, instance, keyboard, keycode, text, modifiers):
+        # ตรวจจับการกดปุ่ม A และ D
+        if keycode == 30:  # ปุ่ม A
+            self.move_left()
+        elif keycode == 32:  # ปุ่ม D
+            self.move_right()
+
+    def move_left(self):
+        # เลื่อนตัวละครไปทางซ้าย
+        self.character_bar.x -= 20
+        # ตรวจสอบให้ตัวละครไม่ออกนอกขอบ
+        self.character_bar.x = max(0, self.character_bar.x)
+
+    def move_right(self):
+        # เลื่อนตัวละครไปทางขวา
+        self.character_bar.x += 20
+        # ตรวจสอบให้ตัวละครไม่ออกนอกขอบ
+        self.character_bar.x = min(
+            self.game_area.width - self.character_bar.width, self.character_bar.x
+        )
 
     def falling_objects(self, dt):
         # สร้างวัตถุโบนัสและวัตถุที่ไม่ใช่โบนัส
@@ -308,7 +250,6 @@ class MyGameApp(App):
         # เพิ่มหน้าจอ
         sm.add_widget(MainMenuScreen(name="menu"))
         sm.add_widget(CharacterSelectionScreen(name="character_selection"))
-        sm.add_widget(CharacterDetailsScreen(name="character_details"))
         sm.add_widget(GameScreen(name="game_screen"))
 
         return sm

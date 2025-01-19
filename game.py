@@ -162,7 +162,7 @@ class CountdownScreen(Screen):
         layout.add_widget(self.countdown_label)
 
         # เริ่มนับถอยหลังจาก 5
-        self.count = 5
+        self.count = 7
         Clock.schedule_interval(self.update_countdown, 1)
 
         self.add_widget(layout)

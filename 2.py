@@ -5,253 +5,380 @@ from kivy.uix.gridlayout import GridLayout
 from kivy.uix.screenmanager import ScreenManager, Screen
 from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.label import Label
-from kivy.graphics import Color, Rectangle
-from kivy.uix.widget import Widget
 from kivy.clock import Clock
-from random import randint
-from kivy.core.window import Window  # สำหรับตรวจจับการกดปุ่มบนคีย์บอร์ด
+from kivy.uix.widget import Widget
+from kivy.animation import Animation
+from kivy.core.window import Window
+from kivy.properties import NumericProperty
+from kivy.uix.popup import Popup
+import random
+import os
+
+
+class Player(Image):
+    speed = NumericProperty(300)
+
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        self.size_hint = (None, None)
+        self.size = (80, 80)
+        self.pos_hint = {"x": 0.5, "bottom": 0.1}
+        try:
+            self.source = kwargs.get("source", "default.png")
+        except:
+            self.source = "default.png"
+
+    def move(self, direction, dt):
+        new_x = self.x + (direction * self.speed * dt)
+        if 0 <= new_x <= Window.width - self.width:
+            self.x = new_x
+
+
+class FallingBonus(Image):
+    points = NumericProperty(10)
+
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        self.size_hint = (None, None)
+        self.size = (50, 50)
+        try:
+            self.source = kwargs.get("source", "bonus.png")
+        except:
+            self.source = "bonus.png"
+
+        bonus_types = ["normal", "special", "rare"]
+        self.bonus_type = random.choice(bonus_types)
+        self.points = {"normal": 10, "special": 20, "rare": 50}[self.bonus_type]
+
+    def reset_position(self, screen_width):
+        self.x = random.randint(0, screen_width - self.width)
+        self.y = screen_width
 
 
 class MainMenuScreen(Screen):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
-
-        # Layout หลัก
         layout = BoxLayout(orientation="vertical", spacing=10, padding=20)
-
-        # ใส่พื้นหลัง
-        self.background = Image(
-            source="D:\\game\\Backgeam.jpg", allow_stretch=True, keep_ratio=False
-        )
+        try:
+            self.background = Image(source="Backgeam.jpg", allow_stretch=True)
+        except:
+            self.background = Widget()
         self.add_widget(self.background)
 
-        # เพิ่มปุ่ม Play ตรงกลางล่าง
         play_button = Button(
             text="Play",
             size_hint=(None, None),
             size=(200, 80),
-            pos_hint={"center_x": 0.5, "y": 0},  # ตั้งตำแหน่งที่กลางล่าง
+            pos_hint={"center_x": 0.5},
             font_size=24,
-            background_color=(0.2, 0.6, 1, 1),  # สีน้ำเงิน
+            background_color=(0.2, 0.6, 1, 1),
         )
         play_button.bind(on_press=self.go_to_character_selection)
         layout.add_widget(play_button)
-
-        # เพิ่ม Layout ที่มีพื้นหลัง
         self.add_widget(layout)
 
     def go_to_character_selection(self, instance):
-        self.manager.current = "character_selection"  # ไปหน้าที่สอง
+        self.manager.current = "character_selection"
 
 
 class CharacterSelectionScreen(Screen):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
-
-        # Grid Layout สำหรับแสดงตัวละคร
-        grid = GridLayout(cols=3, spacing=10, padding=10)
-
-        # รูปตัวละคร (ระบุไฟล์รูป) พร้อมข้อมูลเกี่ยวกับสิ่งที่ทำให้ได้คะแนนบวก
         self.characters = [
             {
-                "image": r"c:\Users\Acer\Downloads\\chinj.png",
+                "image": "chinj.png",
                 "name": "Shinchan",
-                "info": "A 5-year-old boy who is naughty, likes to prank others, likes to dance butt cheek poses.",
-                "bonus": "Choco Bee, Action Kamen.",
+                "info": "A 5-year-old boy who is naughty",
+                "bonus": "Choco Bee",
             },
             {
-                "image": r"C:\Users\Acer\Downloads\\kasaj.png",
+                "image": "kasaj.png",
                 "name": "Kasama",
-                "info": "AShin-chan's best friend who is smart and often acts like an adult.",
-                "bonus": "Books, Fancy Eateries and Good Looking.",
+                "info": "Shin-chan's best friend",
+                "bonus": "Books",
             },
             {
-                "image": r"C:\Users\Acer\Downloads\\nenej.png",
+                "image": "nenej.png",
                 "name": "Nene",
-                "info": "A girl who looks neat but actually secretly has a deep malice.",
-                "bonus": "tea, stuffed rabbits",
+                "info": "A neat girl",
+                "bonus": "Tea",
             },
             {
-                "image": r"C:\Users\Acer\Downloads\\bowwj.png",
+                "image": "bowwj.png",
                 "name": "Bow jang",
-                "info": "The boy is laconic and cute, and unique in that he always has a runny nose.",
-                "bonus": "Butter bread, stones.",
+                "info": "The laconic boy",
+                "bonus": "Bread",
             },
             {
-                "image": r"C:\Users\Acer\Downloads\\masaj.png",
+                "image": "masaj.png",
                 "name": "Masao",
-                "info": "A shy boy who is often bullied.",
-                "bonus": "Drawing, Snack",
+                "info": "A shy boy",
+                "bonus": "Drawing",
             },
             {
-                "image": r"c:\Users\Acer\Downloads\\ij.png",
+                "image": "ij.png",
                 "name": "I jang",
-                "info": "A rich girl who likes Shin-chan.",
-                "bonus": "Cake, Princess",
+                "info": "A rich girl",
+                "bonus": "Cake",
             },
         ]
 
+        main_layout = BoxLayout(orientation="vertical", spacing=10, padding=10)
+        grid = GridLayout(cols=3, spacing=10, padding=10, size_hint=(1, 0.8))
+
         for char in self.characters:
-            char_button = Button(
-                background_normal=char["image"],
-                background_down=char["image"],
-                size_hint=(1, 1),
+            char_button = Button(size_hint=(1, 1))
+            try:
+                char_button.background_normal = char["image"]
+                char_button.background_down = char["image"]
+            except:
+                pass
+            char_button.bind(
+                on_press=lambda instance, c=char: self.show_character_info(c)
             )
-            char_button.bind(on_press=lambda instance, c=char: self.select_character(c))
             grid.add_widget(char_button)
 
-        # เพิ่ม GridLayout ที่แสดงตัวละคร
-        self.add_widget(grid)
+        self.info_layout = BoxLayout(orientation="vertical", size_hint=(1, 0.2))
+        self.name_label = Label(text="", font_size=24, size_hint=(1, None), height=40)
+        self.info_label = Label(text="", font_size=18, size_hint=(1, None), height=80)
+        self.bonus_label = Label(text="", font_size=18, size_hint=(1, None), height=40)
 
-    def select_character(self, character):
-        # ส่งข้อมูลตัวละครไปยังหน้าจอถัดไป
-        self.manager.current = "game_screen"
-        self.manager.get_screen("game_screen").start_game(character)
+        self.info_layout.add_widget(self.name_label)
+        self.info_layout.add_widget(self.info_label)
+        self.info_layout.add_widget(self.bonus_label)
+
+        main_layout.add_widget(grid)
+        main_layout.add_widget(self.info_layout)
+
+        start_button = Button(
+            text="Start",
+            size_hint=(None, None),
+            size=(200, 80),
+            pos_hint={"center_x": 0.5},
+            font_size=24,
+            background_color=(0.2, 0.6, 1, 1),
+        )
+        start_button.bind(on_press=self.start_countdown)
+        main_layout.add_widget(start_button)
+        self.add_widget(main_layout)
+
+    def show_character_info(self, character):
+        self.name_label.text = f"Name: {character['name']}"
+        self.info_label.text = f"Info: {character['info']}"
+        self.bonus_label.text = f"Bonus: {character['bonus']}"
+        self.manager.selected_character = character
+
+    def start_countdown(self, instance):
+        if (
+            not hasattr(self.manager, "selected_character")
+            or not self.manager.selected_character
+        ):
+            self.name_label.text = "Please select a character!"
+        else:
+            self.manager.current = "countdown"
+
+
+class CountdownScreen(Screen):
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        layout = BoxLayout(orientation="vertical", padding=20, spacing=20)
+        self.countdown_label = Label(text="5", font_size=150)
+        layout.add_widget(self.countdown_label)
+        self.count = 5
+        self.add_widget(layout)
+
+    def on_enter(self):
+        self.count = 5
+        Clock.schedule_interval(self.update_countdown, 1)
+
+    def update_countdown(self, dt):
+        self.count -= 1
+        self.countdown_label.text = str(self.count)
+        if self.count <= 0:
+            Clock.unschedule(self.update_countdown)
+            self.manager.current = "game_screen"
+            return False
+        return True
 
 
 class GameScreen(Screen):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
+        self.layout = BoxLayout(orientation="vertical", padding=20, spacing=20)
 
-        self.character = None
-        self.score = 0
-        self.bonus_objects = []
-        self.non_bonus_objects = []
-        self.character_bar = None
-        self.game_area = None
-        self.fall_speed = 3
-        self.game_over_label = None
-
-        # สั่งให้ฟังก์ชันตรวจจับการกดปุ่มบนคีย์บอร์ด
-        Window.bind(on_key_down=self.on_key_down)
-
-    def start_game(self, character):
-        self.character = character
-        self.score = 0
-        self.bonus_objects = []
-        self.non_bonus_objects = []
-
-        layout = BoxLayout(orientation="vertical", spacing=10)
-        self.game_area = Widget(size_hint=(1, 0.9))
-
-        # ตัวละครแทบด้านล่าง
-        self.character_bar = Image(
-            source=character["image"],
-            size_hint=(None, None),
-            size=(100, 100),
-            pos_hint={"center_x": 0.5, "y": 0.1},
+        self.info_bar = BoxLayout(orientation="horizontal", size_hint=(1, 0.1))
+        self.time_left = 30
+        self.timer_label = Label(
+            text=f"Time: {self.time_left}", size_hint=(0.5, 1), font_size=24
         )
-        self.game_area.add_widget(self.character_bar)
-
-        # เพิ่ม Game Area
-        layout.add_widget(self.game_area)
-
-        # Score label
+        self.score = 0
         self.score_label = Label(
-            text=f"Score: {self.score}", font_size=30, size_hint=(1, None), height=50
-        )
-        layout.add_widget(self.score_label)
-
-        # เพิ่ม layout
-        self.add_widget(layout)
-
-        # เริ่มเกม
-        Clock.schedule_interval(self.falling_objects, 1 / 60)  # 60 FPS
-        Clock.schedule_interval(self.update_score, 1)
-
-    def on_key_down(self, instance, keyboard, keycode, text, modifiers):
-        # ตรวจจับการกดปุ่ม A และ D
-        if keycode == 30:  # ปุ่ม A
-            self.move_left()
-        elif keycode == 32:  # ปุ่ม D
-            self.move_right()
-
-    def move_left(self):
-        # เลื่อนตัวละครไปทางซ้าย
-        self.character_bar.x -= 20
-        # ตรวจสอบให้ตัวละครไม่ออกนอกขอบ
-        self.character_bar.x = max(0, self.character_bar.x)
-
-    def move_right(self):
-        # เลื่อนตัวละครไปทางขวา
-        self.character_bar.x += 20
-        # ตรวจสอบให้ตัวละครไม่ออกนอกขอบ
-        self.character_bar.x = min(
-            self.game_area.width - self.character_bar.width, self.character_bar.x
+            text=f"Score: {self.score}", size_hint=(0.5, 1), font_size=24
         )
 
-    def falling_objects(self, dt):
-        # สร้างวัตถุโบนัสและวัตถุที่ไม่ใช่โบนัส
-        if randint(1, 100) > 90:
-            x = randint(0, self.game_area.width - 50)
-            obj = BonusObject(x, self.game_area.height, "bonus", self)
-            self.bonus_objects.append(obj)
-            self.game_area.add_widget(obj)
+        self.info_bar.add_widget(self.timer_label)
+        self.info_bar.add_widget(self.score_label)
+        self.layout.add_widget(self.info_bar)
 
-        if randint(1, 100) > 70:
-            x = randint(0, self.game_area.width - 50)
-            obj = BonusObject(x, self.game_area.height, "non_bonus", self)
-            self.non_bonus_objects.append(obj)
-            self.game_area.add_widget(obj)
+        self.game_area = Widget(size_hint=(1, 0.8))
+        self.layout.add_widget(self.game_area)
 
-        # อัปเดตตำแหน่งของทุกวัตถุ
-        for obj in self.bonus_objects + self.non_bonus_objects:
-            obj.update_position(dt)
-            if obj.y < 0:  # ถ้าวัตถุตกลงไปข้างล่าง
-                self.game_area.remove_widget(obj)
-                if obj.type == "bonus":
-                    self.score -= 10  # ลดคะแนนถ้าตกหล่น
-                else:
-                    self.score += 10  # เพิ่มคะแนนถ้ารับโบนัส
+        self.player = None
+        self.bonus_objects = []
+        self.game_active = False
 
-        # เช็คการชน
-        for obj in self.bonus_objects + self.non_bonus_objects:
-            if self.character_bar.collide_widget(obj):
-                if obj.type == "bonus":
-                    self.score += 10  # เพิ่มคะแนน
-                else:
-                    self.score -= 10  # ลดคะแนน
+        self._keyboard = Window.request_keyboard(self._on_keyboard_closed, self)
+        self._keyboard.bind(on_key_down=self._on_key_down)
+        self._keyboard.bind(on_key_up=self._on_key_up)
 
-                self.game_area.remove_widget(obj)
-                (
-                    self.bonus_objects.remove(obj)
-                    if obj.type == "bonus"
-                    else self.non_bonus_objects.remove(obj)
-                )
+        self.movement = 0
+        self.add_widget(self.layout)
 
-    def update_score(self, dt):
+    def start_game(self):
+        self.game_active = True
+        self.time_left = 30
+        self.score = 0
         self.score_label.text = f"Score: {self.score}"
+        Clock.schedule_interval(self.update_timer, 1)
+        Clock.schedule_interval(self.create_falling_bonus, 2)
+        Clock.schedule_interval(self.update, 1 / 60)
 
+    def _on_keyboard_closed(self):
+        self._keyboard.unbind(on_key_down=self._on_key_down)
+        self._keyboard.unbind(on_key_up=self._on_key_up)
+        self._keyboard = None
 
-class BonusObject(Widget):
-    def __init__(self, x, y, type, game_screen, **kwargs):
-        super().__init__(**kwargs)
-        self.size = (50, 50)
-        self.pos = (x, y)
-        self.type = type
-        self.game_screen = game_screen
+    def _on_key_down(self, keyboard, keycode, text, modifiers):
+        if keycode[1] == "left":
+            self.movement = -1
+        elif keycode[1] == "right":
+            self.movement = 1
+        return True
 
-        # วัตถุโบนัส (ใช้ภาพหรือลูกบอลที่เป็นวงกลม)
-        self.color = (1, 0, 0, 1) if type == "bonus" else (0, 1, 0, 1)
+    def _on_key_up(self, keyboard, keycode):
+        if keycode[1] in ("left", "right"):
+            self.movement = 0
+        return True
 
-        with self.canvas:
-            Color(*self.color)
-            self.rect = Rectangle(size=self.size, pos=self.pos)
+    def update_timer(self, dt):
+        if not self.game_active:
+            return False
+        self.time_left -= 1
+        self.timer_label.text = f"Time: {self.time_left}"
+        if self.time_left <= 0:
+            self.end_game()
+            return False
+        return True
 
-    def update_position(self, dt):
-        self.y -= self.game_screen.fall_speed
-        self.rect.pos = (self.x, self.y)
+    def create_falling_bonus(self, dt):
+        if not self.game_active:
+            return False
+        bonus = FallingBonus()
+        bonus.reset_position(self.game_area.width)
+        self.game_area.add_widget(bonus)
+        anim = Animation(y=0, duration=4)
+        anim.bind(on_complete=self.remove_bonus)
+        anim.start(bonus)
+        self.bonus_objects.append(bonus)
+
+    def remove_bonus(self, animation, bonus):
+        if bonus in self.bonus_objects:
+            self.bonus_objects.remove(bonus)
+            self.game_area.remove_widget(bonus)
+
+    def update(self, dt):
+        if not self.game_active:
+            return False
+        if self.player:
+            self.player.move(self.movement, dt)
+            for bonus in self.bonus_objects[:]:
+                if self.check_collision(self.player, bonus):
+                    self.collect_bonus(bonus)
+
+    def check_collision(self, player, bonus):
+        return (
+            player.x < bonus.x + bonus.width
+            and player.x + player.width > bonus.x
+            and player.y < bonus.y + bonus.height
+            and player.y + player.height > bonus.y
+        )
+
+    def collect_bonus(self, bonus):
+        self.score += bonus.points
+        self.score_label.text = f"Score: {self.score}"
+        if bonus in self.bonus_objects:
+            self.bonus_objects.remove(bonus)
+            self.game_area.remove_widget(bonus)
+
+    def end_game(self):
+        self.game_active = False
+        Clock.unschedule(self.update_timer)
+        Clock.unschedule(self.create_falling_bonus)
+        Clock.unschedule(self.update)
+        for bonus in self.bonus_objects[:]:
+            self.game_area.remove_widget(bonus)
+        self.bonus_objects.clear()
+        self.show_game_over()
+
+    def show_game_over(self):
+        game_over_layout = BoxLayout(orientation="vertical", padding=20)
+        game_over_label = Label(
+            text=f"Game Over!\nFinal Score: {self.score}", font_size=36
+        )
+        game_over_layout.add_widget(game_over_label)
+
+        restart_button = Button(
+            text="Play Again",
+            size_hint=(None, None),
+            size=(200, 80),
+            pos_hint={"center_x": 0.5},
+            on_press=self.restart_game,
+        )
+        game_over_layout.add_widget(restart_button)
+
+        menu_button = Button(
+            text="Main Menu",
+            size_hint=(None, None),
+            size=(200, 80),
+            pos_hint={"center_x": 0.5},
+            on_press=self.go_to_menu,
+        )
+        game_over_layout.add_widget(menu_button)
+
+        popup = Popup(
+            title="Game Over",
+            content=game_over_layout,
+            size_hint=(0.8, 0.8),
+            auto_dismiss=False,
+        )
+        popup.open()
+
+    def restart_game(self, instance):
+        self.manager.current = "countdown"
+
+    def go_to_menu(self, instance):
+        self.manager.current = "menu"
+
+    def on_enter(self):
+        if (
+            hasattr(self.manager, "selected_character")
+            and self.manager.selected_character
+        ):
+            if not self.player:
+                self.player = Player(source=self.manager.selected_character["image"])
+                self.game_area.add_widget(self.player)
+            self.start_game()
 
 
 class MyGameApp(App):
     def build(self):
+        Window.size = (800, 600)
         sm = ScreenManager()
-
-        # เพิ่มหน้าจอ
+        sm.selected_character = None
         sm.add_widget(MainMenuScreen(name="menu"))
         sm.add_widget(CharacterSelectionScreen(name="character_selection"))
+        sm.add_widget(CountdownScreen(name="countdown"))
         sm.add_widget(GameScreen(name="game_screen"))
-
         return sm
 
 

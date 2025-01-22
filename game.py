@@ -10,6 +10,7 @@ from kivy.uix.widget import Widget
 from kivy.animation import Animation
 from kivy.core.window import Window
 from kivy.properties import NumericProperty
+from kivy.uix.popup import Popup  # เพิ่ม import สำหรับ popup
 import random
 
 
@@ -63,15 +64,28 @@ class GameScreen(Screen):
         # Layout หลัก
         self.layout = BoxLayout(orientation="vertical", padding=20, spacing=20)
 
-        # พื้นที่เกมหลัก
-        self.game_area = Widget(size_hint=(1, 0.8))
+        # Timer and score layout
+        self.info_bar = BoxLayout(orientation="horizontal", size_hint=(1, 0.1))
 
-        # เพิ่มคะแนน
+        # Timer label
+        self.time_left = 30  # 30 seconds
+        self.timer_label = Label(
+            text=f"Time: {self.time_left}", size_hint=(0.5, 1), font_size=24
+        )
+
+        # Score label
         self.score = 0
         self.score_label = Label(
-            text=f"Score: {self.score}", size_hint=(1, 0.1), font_size=24
+            text=f"Score: {self.score}", size_hint=(0.5, 1), font_size=24
         )
-        self.layout.add_widget(self.score_label)
+
+        self.info_bar.add_widget(self.timer_label)
+        self.info_bar.add_widget(self.score_label)
+
+        self.layout.add_widget(self.info_bar)
+
+        # พื้นที่เกมหลัก
+        self.game_area = Widget(size_hint=(1, 0.8))
         self.layout.add_widget(self.game_area)
 
         # ตัวละครผู้เล่น
@@ -93,8 +107,7 @@ class GameScreen(Screen):
 
         # โบนัส
         self.bonus_objects = []
-        Clock.schedule_interval(self.create_falling_bonus, 2)
-        Clock.schedule_interval(self.update, 1 / 60)  # อัพเดทเกม 60 FPS
+        self.game_active = False  # Flag to track if game is active
 
         self.add_widget(self.layout)
 
@@ -122,6 +135,94 @@ class GameScreen(Screen):
             self.movement = 0
         return True
 
+    def start_game(self):
+        """เริ่มเกมและตั้งค่าต่างๆ"""
+        self.game_active = True
+        self.time_left = 30
+        self.score = 0
+        self.score_label.text = f"Score: {self.score}"
+
+        # เริ่ม schedulers
+        Clock.schedule_interval(self.update_timer, 1)  # Timer update every second
+        Clock.schedule_interval(
+            self.create_falling_bonus, 2
+        )  # Create bonus every 2 seconds
+        Clock.schedule_interval(self.update, 1 / 60)  # Game update at 60 FPS
+
+    def update_timer(self, dt):
+        """อัพเดทเวลา"""
+        if not self.game_active:
+            return False
+
+        self.time_left -= 1
+        self.timer_label.text = f"Time: {self.time_left}"
+
+        if self.time_left <= 0:
+            self.end_game()
+            return False
+        return True
+
+    def end_game(self):
+        """จบเกม"""
+        self.game_active = False
+
+        # ยกเลิก schedulers ทั้งหมด
+        Clock.unschedule(self.update_timer)
+        Clock.unschedule(self.create_falling_bonus)
+        Clock.unschedule(self.update)
+
+        # ลบโบนัสทั้งหมด
+        for bonus in self.bonus_objects[:]:
+            self.game_area.remove_widget(bonus)
+        self.bonus_objects.clear()
+
+        # แสดงคะแนนสุดท้าย
+        self.show_game_over()
+
+    def show_game_over(self):
+        """แสดงหน้าจอจบเกม"""
+        game_over_layout = BoxLayout(orientation="vertical", padding=20)
+        game_over_label = Label(
+            text=f"Game Over!\nFinal Score: {self.score}", font_size=36, halign="center"
+        )
+        game_over_layout.add_widget(game_over_label)
+
+        # ปุ่มเล่นใหม่
+        restart_button = Button(
+            text="Play Again",
+            size_hint=(None, None),
+            size=(200, 80),
+            pos_hint={"center_x": 0.5},
+            on_press=self.restart_game,
+        )
+        game_over_layout.add_widget(restart_button)
+
+        # ปุ่มกลับเมนูหลัก
+        menu_button = Button(
+            text="Main Menu",
+            size_hint=(None, None),
+            size=(200, 80),
+            pos_hint={"center_x": 0.5},
+            on_press=self.go_to_menu,
+        )
+        game_over_layout.add_widget(menu_button)
+
+        popup = Popup(
+            title="Game Over",
+            content=game_over_layout,
+            size_hint=(0.8, 0.8),
+            auto_dismiss=False,
+        )
+        popup.open()
+
+    def restart_game(self, instance):
+        """เริ่มเกมใหม่"""
+        self.manager.current = "countdown"
+
+    def go_to_menu(self, instance):
+        """กลับไปยังเมนูหลัก"""
+        self.manager.current = "menu"
+
     def on_enter(self):
         """เมื่อเข้าสู่หน้าจอเกม"""
         if (
@@ -141,8 +242,14 @@ class GameScreen(Screen):
                 self.player = Player(source=selected_character["image"])
                 self.game_area.add_widget(self.player)
 
+            # เริ่มเกมใหม่
+            self.start_game()
+
     def create_falling_bonus(self, dt):
         """สร้างโบนัสใหม่"""
+        if not self.game_active:
+            return False
+
         bonus = FallingBonus(source="path/to/bonus_image.png")
         bonus.reset_position(self.game_area.width)
         self.game_area.add_widget(bonus)
@@ -161,6 +268,9 @@ class GameScreen(Screen):
 
     def update(self, dt):
         """อัพเดทเกม"""
+        if not self.game_active:
+            return False
+
         # เคลื่อนที่ตัวละคร
         if self.player:
             self.player.move(self.movement, dt)
@@ -193,6 +303,30 @@ class GameScreen(Screen):
             self.bonus_objects.remove(bonus)
             self.game_area.remove_widget(bonus)
 
+
+# [ส่วนของ MainMenuScreen, CharacterSelectionScreen, CountdownScreen คงเดิม]
+
+
+class MyGameApp(App):
+    def build(self):
+        # ตั้งค่าขนาดหน้าต่างเกม
+        Window.size = (800, 600)
+
+        # สร้าง ScreenManager
+        sm = ScreenManager()
+        sm.selected_character = None
+
+        # เพิ่มหน้าจอทั้งหมด
+        sm.add_widget(MainMenuScreen(name="menu"))
+        sm.add_widget(CharacterSelectionScreen(name="character_selection"))
+        sm.add_widget(CountdownScreen(name="countdown"))
+        sm.add_widget(GameScreen(name="game_screen"))
+
+        return sm
+
+
+if __name__ == "__main__":
+    MyGameApp().run()
 
 # ส่วนที่เหลือของโค้ดยังคงเหมือนเดิม (MainMenuScreen, CharacterSelectionScreen, CountdownScreen, MyGameApp)
 from kivy.app import App
@@ -392,41 +526,13 @@ class MyGameApp(App):
         sm = ScreenManager()
         sm.selected_character = None
 
-        def on_enter(self):
-            """เมื่อเข้าสู่หน้าจอเกม"""
+        # เพิ่มหน้าจอทั้งหมด
+        sm.add_widget(MainMenuScreen(name="menu"))
+        sm.add_widget(CharacterSelectionScreen(name="character_selection"))
+        sm.add_widget(CountdownScreen(name="countdown"))
+        sm.add_widget(GameScreen(name="game_screen"))
 
-        if (
-            hasattr(self.manager, "selected_character")
-            and self.manager.selected_character
-        ):
-            selected_character = self.manager.selected_character
-            self.character_image.source = selected_character["image"]
-            self.character_info.text = (
-                f"Name: {selected_character['name']}\n"
-                f"Bonus: {selected_character['bonus']}"
-            )
-
-            # สร้างตัวละครผู้เล่น
-            if not self.player:
-                self.player = Player(source=selected_character["image"])
-                self.game_area.add_widget(self.player)
-
-    def collect_bonus(self, bonus):
-        """เก็บโบนัสและเพิ่มคะแนน"""
-        self.score += bonus.points
-        self.score_label.text = f"Score: {self.score}"
-        # ลบโบนัส
-        if bonus in self.bonus_objects:
-            self.bonus_objects.remove(bonus)
-            self.game_area.remove_widget(bonus)
-
-        # # เพิ่มหน้าจอทั้งหมด
-        # sm.add_widget(MainMenuScreen(name="menu"))
-        # sm.add_widget(CharacterSelectionScreen(name="character_selection"))
-        # sm.add_widget(CountdownScreen(name="countdown"))
-        # sm.add_widget(GameScreen(name="game_screen"))
-
-        # return sm
+        return sm
 
 
 if __name__ == "__main__":

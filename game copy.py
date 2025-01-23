@@ -60,7 +60,9 @@ class MainMenuScreen(Screen):
         super().__init__(**kwargs)
         layout = BoxLayout(orientation="vertical", spacing=10, padding=20)
         try:
-            self.background = Image(source="Backgeam.jpg", allow_stretch=True)
+            self.background = Image(
+                source=r"C:\Users\Acer\Downloads\Backgeam.jpg", allow_stretch=True
+            )
         except:
             self.background = Widget()
         self.add_widget(self.background)

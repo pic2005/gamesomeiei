@@ -12,7 +12,6 @@ from kivy.core.window import Window
 from kivy.properties import NumericProperty
 from kivy.uix.popup import Popup
 import random
-import os
 
 
 class Player(Image):
@@ -23,10 +22,7 @@ class Player(Image):
         self.size_hint = (None, None)
         self.size = (80, 80)
         self.pos_hint = {"x": 0.5, "bottom": 0.1}
-        try:
-            self.source = kwargs.get("source", "default.png")
-        except:
-            self.source = "default.png"
+        self.source = kwargs.get("source", "default.png")
 
     def move(self, direction, dt):
         new_x = self.x + (direction * self.speed * dt)
@@ -41,10 +37,7 @@ class FallingBonus(Image):
         super().__init__(**kwargs)
         self.size_hint = (None, None)
         self.size = (50, 50)
-        try:
-            self.source = kwargs.get("source", "bonus.png")
-        except:
-            self.source = "bonus.png"
+        self.source = kwargs.get("source", "bonus.png")
 
         bonus_types = ["normal", "special", "rare"]
         self.bonus_type = random.choice(bonus_types)
@@ -55,150 +48,18 @@ class FallingBonus(Image):
         self.y = screen_width
 
 
-class MainMenuScreen(Screen):
+class Obstacle(Image):
+    penalty = NumericProperty(10)
+
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
-        layout = BoxLayout(orientation="vertical", spacing=10, padding=20)
-        try:
-            self.background = Image(source="Backgeam.jpg", allow_stretch=True)
-        except:
-            self.background = Widget()
-        self.add_widget(self.background)
+        self.size_hint = (None, None)
+        self.size = (50, 50)
+        self.source = kwargs.get("source", "obstacle.png")
 
-        play_button = Button(
-            text="Play",
-            size_hint=(None, None),
-            size=(200, 80),
-            pos_hint={"center_x": 0.5},
-            font_size=24,
-            background_color=(0.2, 0.6, 1, 1),
-        )
-        play_button.bind(on_press=self.go_to_character_selection)
-        layout.add_widget(play_button)
-        self.add_widget(layout)
-
-    def go_to_character_selection(self, instance):
-        self.manager.current = "character_selection"
-
-
-class CharacterSelectionScreen(Screen):
-    def __init__(self, **kwargs):
-        super().__init__(**kwargs)
-        self.characters = [
-            {
-                "image": "chinj.png",
-                "name": "Shinchan",
-                "info": "A 5-year-old boy who is naughty",
-                "bonus": "Choco Bee",
-            },
-            {
-                "image": "kasaj.png",
-                "name": "Kasama",
-                "info": "Shin-chan's best friend",
-                "bonus": "Books",
-            },
-            {
-                "image": "nenej.png",
-                "name": "Nene",
-                "info": "A neat girl",
-                "bonus": "Tea",
-            },
-            {
-                "image": "bowwj.png",
-                "name": "Bow jang",
-                "info": "The laconic boy",
-                "bonus": "Bread",
-            },
-            {
-                "image": "masaj.png",
-                "name": "Masao",
-                "info": "A shy boy",
-                "bonus": "Drawing",
-            },
-            {
-                "image": "ij.png",
-                "name": "I jang",
-                "info": "A rich girl",
-                "bonus": "Cake",
-            },
-        ]
-
-        main_layout = BoxLayout(orientation="vertical", spacing=10, padding=10)
-        grid = GridLayout(cols=3, spacing=10, padding=10, size_hint=(1, 0.8))
-
-        for char in self.characters:
-            char_button = Button(size_hint=(1, 1))
-            try:
-                char_button.background_normal = char["image"]
-                char_button.background_down = char["image"]
-            except:
-                pass
-            char_button.bind(
-                on_press=lambda instance, c=char: self.show_character_info(c)
-            )
-            grid.add_widget(char_button)
-
-        self.info_layout = BoxLayout(orientation="vertical", size_hint=(1, 0.2))
-        self.name_label = Label(text="", font_size=24, size_hint=(1, None), height=40)
-        self.info_label = Label(text="", font_size=18, size_hint=(1, None), height=80)
-        self.bonus_label = Label(text="", font_size=18, size_hint=(1, None), height=40)
-
-        self.info_layout.add_widget(self.name_label)
-        self.info_layout.add_widget(self.info_label)
-        self.info_layout.add_widget(self.bonus_label)
-
-        main_layout.add_widget(grid)
-        main_layout.add_widget(self.info_layout)
-
-        start_button = Button(
-            text="Start",
-            size_hint=(None, None),
-            size=(200, 80),
-            pos_hint={"center_x": 0.5},
-            font_size=24,
-            background_color=(0.2, 0.6, 1, 1),
-        )
-        start_button.bind(on_press=self.start_countdown)
-        main_layout.add_widget(start_button)
-        self.add_widget(main_layout)
-
-    def show_character_info(self, character):
-        self.name_label.text = f"Name: {character['name']}"
-        self.info_label.text = f"Info: {character['info']}"
-        self.bonus_label.text = f"Bonus: {character['bonus']}"
-        self.manager.selected_character = character
-
-    def start_countdown(self, instance):
-        if (
-            not hasattr(self.manager, "selected_character")
-            or not self.manager.selected_character
-        ):
-            self.name_label.text = "Please select a character!"
-        else:
-            self.manager.current = "countdown"
-
-
-class CountdownScreen(Screen):
-    def __init__(self, **kwargs):
-        super().__init__(**kwargs)
-        layout = BoxLayout(orientation="vertical", padding=20, spacing=20)
-        self.countdown_label = Label(text="5", font_size=150)
-        layout.add_widget(self.countdown_label)
-        self.count = 5
-        self.add_widget(layout)
-
-    def on_enter(self):
-        self.count = 5
-        Clock.schedule_interval(self.update_countdown, 1)
-
-    def update_countdown(self, dt):
-        self.count -= 1
-        self.countdown_label.text = str(self.count)
-        if self.count <= 0:
-            Clock.unschedule(self.update_countdown)
-            self.manager.current = "game_screen"
-            return False
-        return True
+    def reset_position(self, screen_width):
+        self.x = random.randint(0, screen_width - self.width)
+        self.y = screen_width
 
 
 class GameScreen(Screen):
@@ -225,6 +86,7 @@ class GameScreen(Screen):
 
         self.player = None
         self.bonus_objects = []
+        self.obstacle_objects = []
         self.game_active = False
 
         self._keyboard = Window.request_keyboard(self._on_keyboard_closed, self)
@@ -241,6 +103,7 @@ class GameScreen(Screen):
         self.score_label.text = f"Score: {self.score}"
         Clock.schedule_interval(self.update_timer, 1)
         Clock.schedule_interval(self.create_falling_bonus, 2)
+        Clock.schedule_interval(self.create_obstacle, 3)
         Clock.schedule_interval(self.update, 1 / 60)
 
     def _on_keyboard_closed(self):
@@ -286,6 +149,22 @@ class GameScreen(Screen):
             self.bonus_objects.remove(bonus)
             self.game_area.remove_widget(bonus)
 
+    def create_obstacle(self, dt):
+        if not self.game_active:
+            return False
+        obstacle = Obstacle()
+        obstacle.reset_position(self.game_area.width)
+        self.game_area.add_widget(obstacle)
+        anim = Animation(y=0, duration=4)
+        anim.bind(on_complete=self.remove_obstacle)
+        anim.start(obstacle)
+        self.obstacle_objects.append(obstacle)
+
+    def remove_obstacle(self, animation, obstacle):
+        if obstacle in self.obstacle_objects:
+            self.obstacle_objects.remove(obstacle)
+            self.game_area.remove_widget(obstacle)
+
     def update(self, dt):
         if not self.game_active:
             return False
@@ -294,13 +173,16 @@ class GameScreen(Screen):
             for bonus in self.bonus_objects[:]:
                 if self.check_collision(self.player, bonus):
                     self.collect_bonus(bonus)
+            for obstacle in self.obstacle_objects[:]:
+                if self.check_collision(self.player, obstacle):
+                    self.hit_obstacle(obstacle)
 
-    def check_collision(self, player, bonus):
+    def check_collision(self, player, obj):
         return (
-            player.x < bonus.x + bonus.width
-            and player.x + player.width > bonus.x
-            and player.y < bonus.y + bonus.height
-            and player.y + player.height > bonus.y
+            player.x < obj.x + obj.width
+            and player.x + player.width > obj.x
+            and player.y < obj.y + obj.height
+            and player.y + player.height > obj.y
         )
 
     def collect_bonus(self, bonus):
@@ -310,14 +192,27 @@ class GameScreen(Screen):
             self.bonus_objects.remove(bonus)
             self.game_area.remove_widget(bonus)
 
+    def hit_obstacle(self, obstacle):
+        self.score -= obstacle.penalty
+        if self.score < 0:
+            self.score = 0
+        self.score_label.text = f"Score: {self.score}"
+        if obstacle in self.obstacle_objects:
+            self.obstacle_objects.remove(obstacle)
+            self.game_area.remove_widget(obstacle)
+
     def end_game(self):
         self.game_active = False
         Clock.unschedule(self.update_timer)
         Clock.unschedule(self.create_falling_bonus)
+        Clock.unschedule(self.create_obstacle)
         Clock.unschedule(self.update)
         for bonus in self.bonus_objects[:]:
             self.game_area.remove_widget(bonus)
         self.bonus_objects.clear()
+        for obstacle in self.obstacle_objects[:]:
+            self.game_area.remove_widget(obstacle)
+        self.obstacle_objects.clear()
         self.show_game_over()
 
     def show_game_over(self):
@@ -335,52 +230,3 @@ class GameScreen(Screen):
             on_press=self.restart_game,
         )
         game_over_layout.add_widget(restart_button)
-
-        menu_button = Button(
-            text="Main Menu",
-            size_hint=(None, None),
-            size=(200, 80),
-            pos_hint={"center_x": 0.5},
-            on_press=self.go_to_menu,
-        )
-        game_over_layout.add_widget(menu_button)
-
-        popup = Popup(
-            title="Game Over",
-            content=game_over_layout,
-            size_hint=(0.8, 0.8),
-            auto_dismiss=False,
-        )
-        popup.open()
-
-    def restart_game(self, instance):
-        self.manager.current = "countdown"
-
-    def go_to_menu(self, instance):
-        self.manager.current = "menu"
-
-    def on_enter(self):
-        if (
-            hasattr(self.manager, "selected_character")
-            and self.manager.selected_character
-        ):
-            if not self.player:
-                self.player = Player(source=self.manager.selected_character["image"])
-                self.game_area.add_widget(self.player)
-            self.start_game()
-
-
-class MyGameApp(App):
-    def build(self):
-        Window.size = (800, 600)
-        sm = ScreenManager()
-        sm.selected_character = None
-        sm.add_widget(MainMenuScreen(name="menu"))
-        sm.add_widget(CharacterSelectionScreen(name="character_selection"))
-        sm.add_widget(CountdownScreen(name="countdown"))
-        sm.add_widget(GameScreen(name="game_screen"))
-        return sm
-
-
-if __name__ == "__main__":
-    MyGameApp().run()

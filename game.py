@@ -149,29 +149,37 @@ class CharacterSelectionScreen(Screen):
 
 
 class FallingObject(Image):
-    def __init__(self, **kwargs):
-        # สร้างลิสต์ของรูปภาพโบนัส
-        image_choices = [
+    def __init__(self, is_bonus=True, **kwargs):
+        # เลือกรูปภาพของวัตถุที่ทำให้คะแนนเพิ่มหรือลด
+        image_choices_bonus = [
             r"C:\Users\Acer\Downloads\มังคุด1.jpg",  # ตัวอย่างรูปภาพ
-            r"C:\Users\Acer\Downloads\มะม่วง2.jpg",  # ตัวอย่างรูปภาพ
+            r"C:\Users\Acer\Downloads\มังคุด2.jpg",  # ตัวอย่างรูปภาพ
+        ]
+        image_choices_obstacle = [
+            r"C:\Users\Acer\Downloads\ลำไย.jpg",  # รูปภาพอุปสรรค
+            r"C:\Users\Acer\Downloads\เงาะ.jpg",  # รูปภาพอุปสรรค
         ]
 
-        # เลือกรูปภาพแบบสุ่มจากลิสต์
-        chosen_image = random.choice(image_choices)
+        # ถ้าเป็นโบนัสจะเลือกจาก image_choices_bonus
+        # ถ้าไม่ใช่โบนัส (อุปสรรค) จะเลือกจาก image_choices_obstacle
+        if is_bonus:
+            chosen_image = random.choice(image_choices_bonus)
+            self.points = random.randint(1, 5)  # คะแนนสำหรับโบนัส
+        else:
+            chosen_image = random.choice(image_choices_obstacle)
+            self.points = -random.randint(1, 5)  # คะแนนติดลบสำหรับอุปสรรค
 
         super().__init__(
             source=chosen_image,
             size_hint=(None, None),
             size=(130, 130),
         )
-        self.points = random.randint(1, 5)
 
     def reset_position(self, screen_width):
         self.x = random.randint(0, screen_width - self.width)
-        self.y = screen_width
+        self.y = random.randint(self.height, self.height * 3)  # เริ่มจากตำแหน่งที่สูงขึ้น
 
 
-# หน้าจอเกม
 class GameScreen(Screen):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
@@ -264,7 +272,7 @@ class GameScreen(Screen):
         # Check collisions
         for obj in self.falling_objects[:]:
             if self.check_collision(self.player, obj):
-                self.score += obj.points
+                self.score += obj.points  # เพิ่มหรือลดคะแนนตามวัตถุที่ชน
                 self.score_label.text = f"Score: {self.score}"
                 self.layout.remove_widget(obj)
                 self.falling_objects.remove(obj)
@@ -284,7 +292,9 @@ class GameScreen(Screen):
             self.end_game()
 
     def create_falling_objects(self, dt):
-        obj = FallingObject()
+        # สร้างวัตถุที่ตกลงมาซึ่งอาจจะเป็นโบนัสหรืออุปสรรค
+        is_bonus = random.choice([True, False])  # สุ่มเลือกว่าจะเป็นโบนัสหรืออุปสรรค
+        obj = FallingObject(is_bonus=is_bonus)
         obj.reset_position(Window.width)
         self.layout.add_widget(obj)
 

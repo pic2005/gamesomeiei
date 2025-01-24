@@ -55,7 +55,7 @@ class CharacterSelectionScreen(Screen):
 
         # เพิ่มพื้นหลัง
         background = Image(
-            source=r"C:\Users\Acer\OneDrive\Pictures\Screenshots\พื้นหลังเลือกตัวละคร.png",
+            source=r"C:\Users\Acer\Downloads\พื้นหลัง23.jpg",
             size_hint=(1, 1),
             allow_stretch=True,
         )
@@ -97,77 +97,27 @@ class CharacterSelectionScreen(Screen):
         layout.add_widget(select_button)
         self.add_widget(layout)
 
-        # Screen boundaries
-        self.screen_width = Window.width
-        self.screen_height = Window.height
-
-        # Keyboard handling
-        Window.bind(on_key_down=self.on_key_down)
-        Window.bind(on_key_up=self.on_key_up)
-
-        # Movement variables
-        self.movement_x = 0
-        self.move_speed = 10
-
-    def on_key_down(self, instance, keyboard, keycode, text, modifiers):
-        if keycode == 82:  # Left arrow
-            self.movement_x = -self.move_speed
-        elif keycode == 83:  # Right arrow
-            self.movement_x = self.move_speed
-        return True
-
-    def on_key_up(self, instance, keyboard, keycode, text, modifiers):
-        if keycode in [82, 83]:  # Left or right arrow
-            self.movement_x = 0
-        return True
-
-    def on_enter(self):
-        # Schedule continuous movement update
-        Clock.schedule_interval(self.update_character_position, 1 / 60)
-
-    def on_leave(self):
-        # Stop updates when leaving the screen
-        Clock.unschedule(self.update_character_position)
-
-    def update_character_position(self, dt):
-        x, y = self.character.pos
-
-        # Calculate new x position
-        new_x = x + self.movement_x
-
-        # Keep character within screen boundaries
-        left_boundary = 0
-        right_boundary = self.screen_width - self.character.width
-        new_x = max(left_boundary, min(new_x, right_boundary))
-
-        # Update character position
-        self.character.pos = (new_x, y)
-
     def select_character(self, instance):
-        print("เลือกตัวละครแล้ว!")
         self.manager.current = "game_screen"
 
 
 class FallingObject(Image):
     def __init__(self, is_bonus=True, **kwargs):
-        # เลือกรูปภาพของวัตถุที่ทำให้คะแนนเพิ่มหรือลด
         image_choices_bonus = [
-            r"C:\Users\Acer\Downloads\มังคุด1.jpg",  # ตัวอย่างรูปภาพ
-            r"C:\Users\Acer\Downloads\มังคุด2.jpg",  # ตัวอย่างรูปภาพ
+            r"C:\Users\Acer\Downloads\มังคุด1.jpg",
+            r"C:\Users\Acer\Downloads\มังคุด2.jpg",
         ]
         image_choices_obstacle = [
-            r"C:\Users\Acer\Downloads\ลำไย.jpg",  # รูปภาพอุปสรรค
-            r"C:\Users\Acer\Downloads\เงาะ.jpg",  # รูปภาพอุปสรรค
+            r"C:\Users\Acer\Downloads\ลำไย.jpg",
+            r"C:\Users\Acer\Downloads\เงาะ.jpg",
         ]
 
-        # ถ้าเป็นโบนัสจะเลือกจาก image_choices_bonus
-        # ถ้าไม่ใช่โบนัส (อุปสรรค) จะเลือกจาก image_choices_obstacle
         if is_bonus:
             chosen_image = random.choice(image_choices_bonus)
-            self.points = random.randint(1, 5)  # คะแนนสำหรับโบนัส
+            self.points = random.randint(1, 5)
         else:
             chosen_image = random.choice(image_choices_obstacle)
-            self.points = -random.randint(1, 5)  # คะแนนติดลบสำหรับอุปสรรค
+            self.points = -random.randint(1, 5)
 
         super().__init__(
             source=chosen_image,
@@ -177,7 +127,7 @@ class FallingObject(Image):
 
     def reset_position(self, screen_width):
         self.x = random.randint(0, screen_width - self.width)
-        self.y = random.randint(self.height, self.height * 3)  # เริ่มจากตำแหน่งที่สูงขึ้น
+        self.y = random.randint(self.height * 3, self.height * 5)
 
 
 class GameScreen(Screen):
@@ -187,7 +137,7 @@ class GameScreen(Screen):
 
         # Background
         background = Image(
-            source=r"C:\Users\Acer\OneDrive\Pictures\Screenshots\พื้นหลังเลือกตัวละคร.png",
+            source=r"C:\Users\Acer\Downloads\พื้นหลัง2.jpg",
             size_hint=(1, 1),
             allow_stretch=True,
         )
@@ -209,7 +159,7 @@ class GameScreen(Screen):
             color=(0, 0, 0, 1),
             size_hint=(None, None),
             size=(200, 50),
-            pos_hint={"x": 0.1, "top": 0.95},
+            pos_hint={"x": 0.1, "top": 0.89},
         )
         self.layout.add_widget(self.score_label)
 
@@ -220,9 +170,20 @@ class GameScreen(Screen):
             color=(0, 0, 0, 1),
             size_hint=(None, None),
             size=(200, 50),
-            pos_hint={"right": 0.9, "top": 0.95},
+            pos_hint={"right": 0.9, "top": 0.89},
         )
         self.layout.add_widget(self.time_label)
+
+        # Pause button
+        self.pause_button = Button(
+            text="STOP",
+            font_size=20,
+            size_hint=(None, None),
+            size=(100, 50),
+            pos_hint={"right": 0.95, "y": 0.02},
+        )
+        self.pause_button.bind(on_press=self.toggle_pause)
+        self.layout.add_widget(self.pause_button)
 
         self.add_widget(self.layout)
 
@@ -231,6 +192,7 @@ class GameScreen(Screen):
         self.time_left = 30
         self.falling_objects = []
         self.move_speed = 10
+        self.is_paused = False
 
         # Screen boundaries
         self.screen_width = Window.width
@@ -248,6 +210,10 @@ class GameScreen(Screen):
         Clock.schedule_interval(self.create_falling_objects, 2)
         Clock.schedule_interval(self.update, 1 / 60)
 
+    def toggle_pause(self, instance):
+        self.is_paused = not self.is_paused
+        self.pause_button.text = "Resume" if self.is_paused else "Pause"
+
     def on_key_down(self, instance, keyboard, keycode, text, modifiers):
         if keycode == 82:  # Left arrow
             self.movement_x = -self.move_speed
@@ -261,6 +227,9 @@ class GameScreen(Screen):
         return True
 
     def update(self, dt):
+        if self.is_paused:
+            return
+
         # Move player
         x, y = self.player.pos
         new_x = x + self.movement_x
@@ -272,7 +241,7 @@ class GameScreen(Screen):
         # Check collisions
         for obj in self.falling_objects[:]:
             if self.check_collision(self.player, obj):
-                self.score += obj.points  # เพิ่มหรือลดคะแนนตามวัตถุที่ชน
+                self.score += obj.points
                 self.score_label.text = f"Score: {self.score}"
                 self.layout.remove_widget(obj)
                 self.falling_objects.remove(obj)
@@ -286,14 +255,19 @@ class GameScreen(Screen):
         )
 
     def update_timer(self, dt):
+        if self.is_paused:
+            return
+
         self.time_left -= 1
         self.time_label.text = f"Time: {self.time_left}"
         if self.time_left <= 0:
             self.end_game()
 
     def create_falling_objects(self, dt):
-        # สร้างวัตถุที่ตกลงมาซึ่งอาจจะเป็นโบนัสหรืออุปสรรค
-        is_bonus = random.choice([True, False])  # สุ่มเลือกว่าจะเป็นโบนัสหรืออุปสรรค
+        if self.is_paused:
+            return
+
+        is_bonus = random.choice([True, False])
         obj = FallingObject(is_bonus=is_bonus)
         obj.reset_position(Window.width)
         self.layout.add_widget(obj)

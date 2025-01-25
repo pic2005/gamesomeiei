@@ -11,11 +11,12 @@ import random
 
 
 class FallingObject:
-    def __init__(self, pos, size, source):
+    def __init__(self, pos, size, source, score_change):
         self.pos = pos
         self.size = size
         self.source = source
         self.speed = random.randint(100, 300)  # ความเร็วในการตก
+        self.score_change = score_change  # ผลต่อคะแนน (+10, -10, หรือ -20)
 
 
 class MainScreen(Screen):
@@ -92,7 +93,7 @@ class CharacterSelectionScreen(Screen):
 
         # Back button
         back_button = Button(
-            text="BACK",
+            text="GO",
             font_size=24,
             size_hint=(None, None),
             size=(200, 100),
@@ -157,11 +158,30 @@ class GameScreen(Screen):
         )
         self.layout.add_widget(self.score_label)
 
+        # Label สำหรับแสดงเวลา
+        self.time_label = Label(
+            text="Time: 30:00",
+            font_size=24,
+            size_hint=(None, None),
+            size=(200, 50),
+            pos_hint={"top": 1, "left": 1},
+            color=(1, 1, 1, 1),
+        )
+        self.layout.add_widget(self.time_label)
+
+        # ตัวแปรสำหรับเวลา
+        self.time_elapsed = 0  # เวลาที่ผ่านไป
+        self.game_duration = 30  # ระยะเวลาเกม (วินาที)
+        self.game_over = False  # สถานะเกมจบหรือไม่
+
         # สร้างของที่หล่นลงมาเป็นระยะ
         Clock.schedule_interval(self.spawn_falling_object, 1)
 
         # อัพเดทของที่หล่นลงมาทุกเฟรม
         Clock.schedule_interval(self.update_falling_objects, 1.0 / 60.0)
+
+        # อัพเดทเวลา
+        Clock.schedule_interval(self.update_time, 1)
 
     def _on_keyboard_closed(self):
         self._keyboard.unbind(on_key_down=self._on_key_down)
@@ -179,6 +199,9 @@ class GameScreen(Screen):
             self.pressed_keys.remove(text)
 
     def move_step(self, dt):
+        if self.game_over:
+            return  # หยุดเคลื่อนที่หากเกมจบ
+
         cur_x = self.hero.pos[0]
         step = 300 * dt  # ความเร็วการเคลื่อนที่
 
@@ -198,15 +221,35 @@ class GameScreen(Screen):
         self.hero.pos = (cur_x, self.hero.pos[1])
 
     def spawn_falling_object(self, dt):
+        if self.game_over:
+            return  # หยุดสร้างของที่หล่นลงมาหากเกมจบ
+
         # สุ่มตำแหน่งเริ่มต้นบนแกน X
         x = random.randint(0, int(Window.width - 50))
         y = Window.height  # เริ่มจากด้านบนของหน้าจอ
 
+        # สุ่มเลือกประเภทของที่หล่นลงมา (โบนัสหรือของที่ไม่ดี)
+        random_value = random.random()
+        if random_value < 0.4:  # 40% โอกาสเป็นโบนัส
+            if random.random() < 0.5:  # 50% โอกาสเลือกรูปภาพมังคุด1 หรือมังคุด2
+                source = "images/มังคุด1.png"
+                score_change = 10  # เพิ่มคะแนน
+            else:
+                source = "images/มังคุด2.png"
+                score_change = 15  # เพิ่มคะแนน
+        elif random_value < 0.7:  # 30% โอกาสเป็นของที่ไม่ดี (ลดคะแนน -10)
+            source = "images/ลำไย.png"
+            score_change = -10  # ลดคะแนน
+        else:  # 30% โอกาสเป็นของที่ไม่ดีอีกชนิด (ลดคะแนน -20)
+            source = "images/เงาะ.png"
+            score_change = -20  # ลดคะแนนเพิ่มเติม
+
         # สร้างของที่หล่นลงมา
         obj = FallingObject(
             pos=(x, y),
-            size=(50, 50),  # ขนาดของของที่หล่นลงมา
-            source="images/โบนัส.png",  # ภาพของโบนัส
+            size=(70, 70),  # ขนาดของของที่หล่นลงมา
+            source=source,
+            score_change=score_change,
         )
 
         # วาดของที่หล่นลงมาด้วย canvas
@@ -217,6 +260,9 @@ class GameScreen(Screen):
         self.falling_objects.append(obj)
 
     def update_falling_objects(self, dt):
+        if self.game_over:
+            return  # หยุดอัพเดทของที่หล่นลงมาหากเกมจบ
+
         for obj in self.falling_objects[:]:  # ใช้ [:] เพื่อป้องกันปัญหาในการลบของจากลิสต์
             # เคลื่อนที่ของที่หล่นลงมา
             obj.pos = (obj.pos[0], obj.pos[1] - obj.speed * dt)
@@ -224,7 +270,7 @@ class GameScreen(Screen):
 
             # ตรวจสอบการชนกันระหว่างตัวละครและของที่หล่นลงมา
             if self.check_collision(self.hero, obj):
-                self.score += 10  # เพิ่มคะแนน
+                self.score += obj.score_change  # ปรับคะแนน
                 self.score_label.text = f"Score: {self.score}"  # อัพเดทคะแนน
                 self.layout.canvas.remove(obj.rect)  # ลบของที่หล่นลงมาออกจาก canvas
                 self.falling_objects.remove(obj)  # ลบของที่หล่นลงมาออกจากลิสต์
@@ -249,6 +295,38 @@ class GameScreen(Screen):
         ):
             return True
         return False
+
+    def update_time(self, dt):
+        if self.game_over:
+            return  # หยุดนับเวลาหากเกมจบ
+
+        self.time_elapsed += dt  # เพิ่มเวลาที่ผ่านไป
+        time_left = max(
+            0, self.game_duration - int(self.time_elapsed)
+        )  # คำนวณเวลาที่เหลือ
+        minutes = time_left // 60  # คำนวณนาที
+        seconds = time_left % 60  # คำนวณวินาที
+
+        # แสดงเวลาที่เหลือในรูปแบบ MM:SS
+        self.time_label.text = f"Time: {minutes:02}:{seconds:02}"
+
+        if time_left <= 0:  # ตรวจสอบว่าเวลาเกิน 30 วินาทีหรือไม่
+            self.game_over = True  # ตั้งค่าสถานะเกมจบ
+            self.show_game_over()  # แสดงผลลัพธ์
+
+    def show_game_over(self):
+        # แสดงผลลัพธ์เมื่อเกมจบ
+        game_over_label = Label(
+            text=f"Game Over!\nYour Score: {self.score}",
+            font_size=40,
+            color=(1, 0, 0, 1),
+            size_hint=(None, None),
+            size=(600, 200),
+            pos_hint={"center_x": 0.5, "center_y": 0.5},
+            halign="center",
+            valign="middle",
+        )
+        self.layout.add_widget(game_over_label)
 
 
 class GameApp(App):

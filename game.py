@@ -1,67 +1,74 @@
 from kivy.app import App
-from kivy.uix.button import Button
+from kivy.uix.screenmanager import Screen, ScreenManager
 from kivy.uix.floatlayout import FloatLayout
-from kivy.uix.boxlayout import BoxLayout
-from kivy.uix.widget import Widget
 from kivy.uix.image import Image
-from kivy.uix.screenmanager import ScreenManager, Screen
 from kivy.uix.label import Label
+from kivy.uix.button import Button
 from kivy.core.window import Window
 from kivy.clock import Clock
-from kivy.animation import Animation
+from kivy.graphics import Rectangle
 import random
 
 
-# หน้าจอหลัก
+class FallingObject:
+    def __init__(self, pos, size, source):
+        self.pos = pos
+        self.size = size
+        self.source = source
+        self.speed = random.randint(100, 300)  # ความเร็วในการตก
+
+
 class MainScreen(Screen):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         layout = FloatLayout()
 
-        # เพิ่มพื้นหลัง
+        # Background image with stretching and keeping ratio
         background = Image(
-            source=r"C:\Users\Acer\OneDrive\Pictures\Screenshots\พื้นหลังไทย.png"
+            source=r"C:\Users\Acer\Downloads\พล.jpg",
+            size_hint=(1, 1),  # ขยายให้เต็มหน้าจอ
+            allow_stretch=True,  # อนุญาตให้ขยายภาพ
+            keep_ratio=False,  # ไม่รักษาสัดส่วนภาพ
         )
         layout.add_widget(background)
 
-        # สร้างปุ่ม Start
+        # Start button
         start_button = Button(
-            text="Start",
+            text="START",
             font_size=24,
             size_hint=(None, None),
             size=(200, 100),
-            pos_hint={"center_x": 0.5, "center_y": 0.3},
+            pos_hint={"center_x": 0.5, "center_y": 0.2},
             background_normal="",
             background_color=(1, 0.84, 0, 1),
             border=(20, 20, 20, 20),
             color=(0, 0, 0, 1),
         )
-
         start_button.bind(on_press=self.start_game)
-
         layout.add_widget(start_button)
 
         self.add_widget(layout)
 
     def start_game(self, instance):
+        # ไปที่หน้าแนะนำตัวละคร
         self.manager.current = "character_screen"
 
 
-# หน้าจอเลือกตัวละคร
 class CharacterSelectionScreen(Screen):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         layout = FloatLayout()
 
-        # เพิ่มพื้นหลัง
+        # Background image with stretching and keeping ratio
         background = Image(
             source=r"C:\Users\Acer\Downloads\พื้นหลัง23.jpg",
-            size_hint=(1, 1),
-            allow_stretch=True,
+            size_hint=(1, 1),  # ขยายให้เต็มหน้าจอ
+            allow_stretch=True,  # อนุญาตให้ขยายภาพ
+            keep_ratio=False,  # ไม่รักษาสัดส่วนภาพ
         )
         layout.add_widget(background)
 
-        # เพิ่มตัวละคร
+        # Character image
         self.character = Image(
             source=r"C:\Users\Acer\Downloads\ช้าง.png",
             size_hint=(None, None),
@@ -70,7 +77,7 @@ class CharacterSelectionScreen(Screen):
         )
         layout.add_widget(self.character)
 
-        # เพิ่มคำอธิบายเกม
+        # Game description label
         game_description = Label(
             text="Hello, my name is Khud Kat.\nMy name comes from mangosteen.\nPlease help me collect a lot of fallen mangosteen,\nand I will be able to go home.",
             font_size=20,
@@ -83,243 +90,186 @@ class CharacterSelectionScreen(Screen):
         )
         layout.add_widget(game_description)
 
-        # เพิ่มปุ่มเลือกตัวละคร
-        select_button = Button(
-            text="START",
+        # Back button
+        back_button = Button(
+            text="BACK",
             font_size=24,
             size_hint=(None, None),
             size=(200, 100),
             pos_hint={"center_x": 0.5, "center_y": 0.1},
-            background_color=(0.4, 0.8, 0.4, 1),
+            background_color=(0.8, 0.4, 0.4, 1),
         )
-        select_button.bind(on_press=self.select_character)
+        back_button.bind(on_press=self.go_back)
+        layout.add_widget(back_button)
 
-        layout.add_widget(select_button)
         self.add_widget(layout)
 
-    def select_character(self, instance):
+    def go_back(self, instance):
+        # ไปที่หน้าควบคุมตัวละคร
         self.manager.current = "game_screen"
-
-
-class FallingObject(Image):
-    def __init__(self, is_bonus=True, **kwargs):
-        image_choices_bonus = [
-            r"C:\Users\Acer\Downloads\มังคุด1.jpg",
-            r"C:\Users\Acer\Downloads\มังคุด2.jpg",
-        ]
-        image_choices_obstacle = [
-            r"C:\Users\Acer\Downloads\ลำไย.jpg",
-            r"C:\Users\Acer\Downloads\เงาะ.jpg",
-        ]
-
-        if is_bonus:
-            chosen_image = random.choice(image_choices_bonus)
-            self.points = random.randint(1, 5)
-        else:
-            chosen_image = random.choice(image_choices_obstacle)
-            self.points = -random.randint(1, 5)
-
-        super().__init__(
-            source=chosen_image,
-            size_hint=(None, None),
-            size=(130, 130),
-        )
-
-    def reset_position(self, screen_width):
-        self.x = random.randint(0, screen_width - self.width)
-        self.y = random.randint(self.height * 3, self.height * 5)
 
 
 class GameScreen(Screen):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
-        self.layout = FloatLayout()
+        self._keyboard = Window.request_keyboard(self._on_keyboard_closed, self)
+        self._keyboard.bind(on_key_down=self._on_key_down)
+        self._keyboard.bind(on_key_up=self._on_key_up)
+        self.pressed_keys = set()
+        Clock.schedule_interval(self.move_step, 0)
 
-        # Background
+        # กำหนดตำแหน่งเริ่มต้นที่ด้านล่างของหน้าจอ
+        initial_x = 0
+        initial_y = 0  # ด้านล่างของหน้าจอ
+        self.layout = FloatLayout()
+        self.add_widget(self.layout)  # เพิ่ม layout เข้าไปในหน้าจอ
+
+        # Background image with stretching and keeping ratio
         background = Image(
-            source=r"C:\Users\Acer\Downloads\พื้นหลัง2.jpg",
-            size_hint=(1, 1),
-            allow_stretch=True,
+            source=r"images\พื้นหลัง2.jpg",
+            size_hint=(1, 1),  # ขยายให้เต็มหน้าจอ
+            allow_stretch=True,  # อนุญาตให้ขยายภาพ
+            keep_ratio=False,  # ไม่รักษาสัดส่วนภาพ
         )
         self.layout.add_widget(background)
 
-        # Player character
-        self.player = Image(
-            source=r"C:\Users\Acer\Downloads\ช้าง.png",
-            size_hint=(None, None),
-            size=(300, 300),
-            pos_hint={"center_x": 0.5, "center_y": 0.2},
-        )
-        self.layout.add_widget(self.player)
+        # กำหนดขนาดตัวละคร
+        self.hero_size = (300, 250)
 
-        # Score label
+        # วาดตัวละครด้วย canvas ของ FloatLayout
+        with self.layout.canvas:
+            self.hero = Rectangle(
+                source="images/ช้าง.png", pos=(initial_x, initial_y), size=self.hero_size
+            )
+
+        # ตัวแปรสำหรับเก็บของที่หล่นลงมา
+        self.falling_objects = []
+        self.score = 0
+
+        # Label สำหรับแสดงคะแนน
         self.score_label = Label(
-            text="Score: 0",
+            text=f"Score: {self.score}",
             font_size=24,
-            color=(0, 0, 0, 1),
             size_hint=(None, None),
             size=(200, 50),
-            pos_hint={"x": 0.1, "top": 0.89},
+            pos_hint={"top": 1, "right": 1},
+            color=(1, 1, 1, 1),
         )
         self.layout.add_widget(self.score_label)
 
-        # Time label
-        self.time_label = Label(
-            text="Time: 30",
-            font_size=24,
-            color=(0, 0, 0, 1),
-            size_hint=(None, None),
-            size=(200, 50),
-            pos_hint={"right": 0.9, "top": 0.89},
-        )
-        self.layout.add_widget(self.time_label)
+        # สร้างของที่หล่นลงมาเป็นระยะ
+        Clock.schedule_interval(self.spawn_falling_object, 1)
 
-        # Pause button
-        self.pause_button = Button(
-            text="STOP",
-            font_size=20,
-            size_hint=(None, None),
-            size=(100, 50),
-            pos_hint={"right": 0.95, "y": 0.02},
-        )
-        self.pause_button.bind(on_press=self.toggle_pause)
-        self.layout.add_widget(self.pause_button)
+        # อัพเดทของที่หล่นลงมาทุกเฟรม
+        Clock.schedule_interval(self.update_falling_objects, 1.0 / 60.0)
 
-        self.add_widget(self.layout)
+    def _on_keyboard_closed(self):
+        self._keyboard.unbind(on_key_down=self._on_key_down)
+        self._keyboard.unbind(on_key_up=self._on_key_up)
+        self._keyboard = None
 
-        # Game variables
-        self.score = 0
-        self.time_left = 30
-        self.falling_objects = []
-        self.move_speed = 10
-        self.is_paused = False
+    def _on_key_down(self, keyboard, keycode, text, modifiers):
+        print("down", text)
+        self.pressed_keys.add(text)
 
-        # Screen boundaries
-        self.screen_width = Window.width
-        self.screen_height = Window.height
+    def _on_key_up(self, keyboard, keycode):
+        text = keycode[1]
+        print("up", text)
+        if text in self.pressed_keys:
+            self.pressed_keys.remove(text)
 
-        # Keyboard handling
-        Window.bind(on_key_down=self.on_key_down)
-        Window.bind(on_key_up=self.on_key_up)
+    def move_step(self, dt):
+        cur_x = self.hero.pos[0]
+        step = 300 * dt  # ความเร็วการเคลื่อนที่
 
-        # Movement variables
-        self.movement_x = 0
+        # เคลื่อนที่เฉพาะซ้ายและขวา
+        if "a" in self.pressed_keys:
+            cur_x -= step
+        if "d" in self.pressed_keys:
+            cur_x += step
 
-        # Start game timers
-        Clock.schedule_interval(self.update_timer, 1)
-        Clock.schedule_interval(self.create_falling_objects, 2)
-        Clock.schedule_interval(self.update, 1 / 60)
+        # จำกัดขอบเขตการเคลื่อนที่ของตัวละคร (ไม่ให้ออกนอกหน้าจอ)
+        if cur_x < 0:
+            cur_x = 0
+        elif cur_x + self.hero_size[0] > Window.width:
+            cur_x = Window.width - self.hero_size[0]
 
-    def toggle_pause(self, instance):
-        self.is_paused = not self.is_paused
-        self.pause_button.text = "Resume" if self.is_paused else "Pause"
+        # อัพเดทตำแหน่งตัวละคร
+        self.hero.pos = (cur_x, self.hero.pos[1])
 
-    def on_key_down(self, instance, keyboard, keycode, text, modifiers):
-        if keycode == 82:  # Left arrow
-            self.movement_x = -self.move_speed
-        elif keycode == 83:  # Right arrow
-            self.movement_x = self.move_speed
-        return True
+    def spawn_falling_object(self, dt):
+        # สุ่มตำแหน่งเริ่มต้นบนแกน X
+        x = random.randint(0, int(Window.width - 50))
+        y = Window.height  # เริ่มจากด้านบนของหน้าจอ
 
-    def on_key_up(self, instance, keyboard, keycode, text, modifiers):
-        if keycode in [82, 83]:  # Left or right arrow
-            self.movement_x = 0
-        return True
-
-    def update(self, dt):
-        if self.is_paused:
-            return
-
-        # Move player
-        x, y = self.player.pos
-        new_x = x + self.movement_x
-
-        # Keep player within screen boundaries
-        new_x = max(0, min(new_x, self.screen_width - self.player.width))
-        self.player.pos = (new_x, y)
-
-        # Check collisions
-        for obj in self.falling_objects[:]:
-            if self.check_collision(self.player, obj):
-                self.score += obj.points
-                self.score_label.text = f"Score: {self.score}"
-                self.layout.remove_widget(obj)
-                self.falling_objects.remove(obj)
-
-    def check_collision(self, player, obj):
-        return (
-            player.x < obj.x + obj.width
-            and player.x + player.width > obj.x
-            and player.y < obj.y + obj.height
-            and player.y + player.height > obj.y
+        # สร้างของที่หล่นลงมา
+        obj = FallingObject(
+            pos=(x, y),
+            size=(50, 50),  # ขนาดของของที่หล่นลงมา
+            source="images/โบนัส.png",  # ภาพของโบนัส
         )
 
-    def update_timer(self, dt):
-        if self.is_paused:
-            return
+        # วาดของที่หล่นลงมาด้วย canvas
+        with self.layout.canvas:
+            obj.rect = Rectangle(source=obj.source, pos=obj.pos, size=obj.size)
 
-        self.time_left -= 1
-        self.time_label.text = f"Time: {self.time_left}"
-        if self.time_left <= 0:
-            self.end_game()
-
-    def create_falling_objects(self, dt):
-        if self.is_paused:
-            return
-
-        is_bonus = random.choice([True, False])
-        obj = FallingObject(is_bonus=is_bonus)
-        obj.reset_position(Window.width)
-        self.layout.add_widget(obj)
-
-        # Animate falling
-        anim = Animation(y=0, duration=4)
-        anim.bind(on_complete=self.remove_fallen_object)
-        anim.start(obj)
-
+        # เพิ่มของที่หล่นลงมาเข้าไปในลิสต์
         self.falling_objects.append(obj)
 
-    def remove_fallen_object(self, animation, obj):
-        if obj in self.falling_objects:
-            self.layout.remove_widget(obj)
-            self.falling_objects.remove(obj)
+    def update_falling_objects(self, dt):
+        for obj in self.falling_objects[:]:  # ใช้ [:] เพื่อป้องกันปัญหาในการลบของจากลิสต์
+            # เคลื่อนที่ของที่หล่นลงมา
+            obj.pos = (obj.pos[0], obj.pos[1] - obj.speed * dt)
+            obj.rect.pos = obj.pos
 
-    def end_game(self):
-        Clock.unschedule(self.update_timer)
-        Clock.unschedule(self.create_falling_objects)
-        Clock.unschedule(self.update)
+            # ตรวจสอบการชนกันระหว่างตัวละครและของที่หล่นลงมา
+            if self.check_collision(self.hero, obj):
+                self.score += 10  # เพิ่มคะแนน
+                self.score_label.text = f"Score: {self.score}"  # อัพเดทคะแนน
+                self.layout.canvas.remove(obj.rect)  # ลบของที่หล่นลงมาออกจาก canvas
+                self.falling_objects.remove(obj)  # ลบของที่หล่นลงมาออกจากลิสต์
 
-        # Game over layout
-        game_over_layout = BoxLayout(orientation="vertical", padding=20, spacing=10)
+            # ลบของที่หล่นลงมาหากตกออกจากหน้าจอ
+            if obj.pos[1] + obj.size[1] < 0:
+                self.layout.canvas.remove(obj.rect)
+                self.falling_objects.remove(obj)
 
-        game_over_label = Label(
-            text=f"Game Over!\nScore: {self.score}", font_size=36, color=(0, 0, 0, 1)
-        )
+    def check_collision(self, hero, obj):
+        # ตรวจสอบว่าตัวละครและของที่หล่นลงมาซ้อนทับกันหรือไม่
+        hero_x, hero_y = hero.pos
+        hero_width, hero_height = hero.size
+        obj_x, obj_y = obj.pos
+        obj_width, obj_height = obj.size
 
-        restart_button = Button(text="Restart", size_hint=(None, None), size=(200, 50))
+        if (
+            hero_x < obj_x + obj_width
+            and hero_x + hero_width > obj_x
+            and hero_y < obj_y + obj_height
+            and hero_y + hero_height > obj_y
+        ):
+            return True
+        return False
 
-        game_over_layout.add_widget(game_over_label)
-        game_over_layout.add_widget(restart_button)
 
-        self.add_widget(game_over_layout)
-
-
-# แอปหลัก
 class GameApp(App):
     def build(self):
+        # ตั้งค่าขนาดหน้าจอเริ่มต้น
+        Window.size = (800, 600)  # ตัวอย่างขนาด 800x600 พิกเซล
+
         sm = ScreenManager()
 
-        # เพิ่มหน้าจอหลัก
+        # เพิ่มหน้าแรก, หน้าแนะนำตัวละคร, และหน้าควบคุมตัวละคร
         main_screen = MainScreen(name="main_screen")
         sm.add_widget(main_screen)
 
-        # เพิ่มหน้าจอเลือกตัวละคร
         character_screen = CharacterSelectionScreen(name="character_screen")
         sm.add_widget(character_screen)
 
-        # เพิ่มหน้าจอเกม
         game_screen = GameScreen(name="game_screen")
         sm.add_widget(game_screen)
+
+        # เริ่มต้นที่หน้าแรก
+        sm.current = "main_screen"
 
         return sm
 

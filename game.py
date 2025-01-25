@@ -91,8 +91,8 @@ class CharacterSelectionScreen(Screen):
         )
         layout.add_widget(game_description)
 
-        # Back button
-        back_button = Button(
+        # GO button
+        go_button = Button(
             text="GO",
             font_size=24,
             size_hint=(None, None),
@@ -100,14 +100,30 @@ class CharacterSelectionScreen(Screen):
             pos_hint={"center_x": 0.5, "center_y": 0.1},
             background_color=(0.8, 0.4, 0.4, 1),
         )
-        back_button.bind(on_press=self.go_back)
-        layout.add_widget(back_button)
+        go_button.bind(on_press=self.go_to_game)
+        layout.add_widget(go_button)
+
+        # Back to main screen button
+        back_to_main_button = Button(
+            text="Back",
+            font_size=20,
+            size_hint=(None, None),
+            size=(100, 50),
+            pos_hint={"x": 0.02, "top": 0.1},
+            background_color=(0.5, 0.5, 0.5, 1),
+        )
+        back_to_main_button.bind(on_press=self.back_to_main)
+        layout.add_widget(back_to_main_button)
 
         self.add_widget(layout)
 
-    def go_back(self, instance):
-        # ไปที่หน้าควบคุมตัวละคร
+    def go_to_game(self, instance):
+        # ไปที่หน้าเกม
         self.manager.current = "game_screen"
+
+    def back_to_main(self, instance):
+        # กลับไปที่หน้าแรก
+        self.manager.current = "main_screen"
 
 
 class GameScreen(Screen):
@@ -173,6 +189,7 @@ class GameScreen(Screen):
         self.time_elapsed = 0  # เวลาที่ผ่านไป
         self.game_duration = 30  # ระยะเวลาเกม (วินาที)
         self.game_over = False  # สถานะเกมจบหรือไม่
+        self.is_paused = False  # สถานะหยุดเกมหรือไม่
 
         # สร้างของที่หล่นลงมาเป็นระยะ
         Clock.schedule_interval(self.spawn_falling_object, 1)
@@ -183,24 +200,110 @@ class GameScreen(Screen):
         # อัพเดทเวลา
         Clock.schedule_interval(self.update_time, 1)
 
+        # Back to character selection screen button
+        back_to_character_button = Button(
+            text="Back",
+            font_size=20,
+            size_hint=(None, None),
+            size=(100, 50),
+            pos_hint={"x": 0.02, "top": 0.1},
+            background_color=(0.5, 0.5, 0.5, 1),
+        )
+        back_to_character_button.bind(on_press=self.back_to_character)
+        self.layout.add_widget(back_to_character_button)
+
+        # Pause/Resume button (อยู่ด้านขวา)
+        self.pause_button = Button(
+            text="Pause",
+            font_size=20,
+            size_hint=(None, None),
+            size=(100, 50),
+            pos_hint={"right": 0.98, "top": 0.1},  # ปรับตำแหน่งไปด้านขวา
+            background_color=(0.5, 0.5, 0.5, 1),
+        )
+        self.pause_button.bind(on_press=self.toggle_pause)
+        self.layout.add_widget(self.pause_button)
+
+        # Game Over label
+        self.game_over_label = Label(
+            text="",
+            font_size=40,
+            color=(1, 0, 0, 1),
+            size_hint=(None, None),
+            size=(600, 200),
+            pos_hint={"center_x": 0.5, "center_y": 0.7},
+            halign="center",
+            valign="middle",
+            opacity=0,  # ซ่อนไว้ในตอนแรก
+        )
+        self.layout.add_widget(self.game_over_label)
+
+        # Play Again button
+        self.play_again_button = Button(
+            text="Play Again",
+            font_size=24,
+            size_hint=(None, None),
+            size=(200, 100),
+            pos_hint={"center_x": 0.5, "center_y": 0.4},
+            background_color=(0.5, 0.5, 0.5, 1),
+            opacity=0,  # ซ่อนไว้ในตอนแรก
+        )
+        self.play_again_button.bind(on_press=self.play_again)
+        self.layout.add_widget(self.play_again_button)
+
+        # Back to Main button
+        self.back_to_main_button = Button(
+            text="Back to Main",
+            font_size=24,
+            size_hint=(None, None),
+            size=(200, 100),
+            pos_hint={"center_x": 0.5, "center_y": 0.2},
+            background_color=(0.5, 0.5, 0.5, 1),
+            opacity=0,  # ซ่อนไว้ในตอนแรก
+        )
+        self.back_to_main_button.bind(on_press=self.back_to_main)
+        self.layout.add_widget(self.back_to_main_button)
+
+    def toggle_pause(self, instance):
+        # สลับสถานะหยุดเกม
+        self.is_paused = not self.is_paused
+
+        if self.is_paused:
+            self.pause_button.text = "Resume"  # เปลี่ยนข้อความปุ่มเป็น "Resume"
+            self.pause_game()  # หยุดเกม
+        else:
+            self.pause_button.text = "Pause"  # เปลี่ยนข้อความปุ่มเป็น "Pause"
+            self.resume_game()  # เล่นต่อ
+
+    def pause_game(self):
+        # หยุดเวลาและหยุดการเคลื่อนที่ของวัตถุ
+        self.game_over = True  # หยุดเกมชั่วคราว
+
+    def resume_game(self):
+        # เล่นต่อเวลาและการเคลื่อนที่ของวัตถุ
+        self.game_over = False  # เล่นต่อเกม
+
+    def back_to_character(self, instance):
+        # กลับไปที่หน้าเลือกตัวละคร
+        self.manager.current = "character_screen"
+
     def _on_keyboard_closed(self):
         self._keyboard.unbind(on_key_down=self._on_key_down)
         self._keyboard.unbind(on_key_up=self._on_key_up)
         self._keyboard = None
 
     def _on_key_down(self, keyboard, keycode, text, modifiers):
-        print("down", text)
-        self.pressed_keys.add(text)
+        if not self.is_paused:  # ตรวจสอบว่าเกมไม่หยุด
+            self.pressed_keys.add(text)
 
     def _on_key_up(self, keyboard, keycode):
         text = keycode[1]
-        print("up", text)
         if text in self.pressed_keys:
             self.pressed_keys.remove(text)
 
     def move_step(self, dt):
-        if self.game_over:
-            return  # หยุดเคลื่อนที่หากเกมจบ
+        if self.game_over or self.is_paused:
+            return  # หยุดเคลื่อนที่หากเกมจบหรือหยุดชั่วคราว
 
         cur_x = self.hero.pos[0]
         step = 300 * dt  # ความเร็วการเคลื่อนที่
@@ -221,8 +324,8 @@ class GameScreen(Screen):
         self.hero.pos = (cur_x, self.hero.pos[1])
 
     def spawn_falling_object(self, dt):
-        if self.game_over:
-            return  # หยุดสร้างของที่หล่นลงมาหากเกมจบ
+        if self.game_over or self.is_paused:
+            return  # หยุดสร้างของที่หล่นลงมาหากเกมจบหรือหยุดชั่วคราว
 
         # สุ่มตำแหน่งเริ่มต้นบนแกน X
         x = random.randint(0, int(Window.width - 50))
@@ -260,8 +363,8 @@ class GameScreen(Screen):
         self.falling_objects.append(obj)
 
     def update_falling_objects(self, dt):
-        if self.game_over:
-            return  # หยุดอัพเดทของที่หล่นลงมาหากเกมจบ
+        if self.game_over or self.is_paused:
+            return  # หยุดอัพเดทของที่หล่นลงมาหากเกมจบหรือหยุดชั่วคราว
 
         for obj in self.falling_objects[:]:  # ใช้ [:] เพื่อป้องกันปัญหาในการลบของจากลิสต์
             # เคลื่อนที่ของที่หล่นลงมา
@@ -297,8 +400,8 @@ class GameScreen(Screen):
         return False
 
     def update_time(self, dt):
-        if self.game_over:
-            return  # หยุดนับเวลาหากเกมจบ
+        if self.game_over or self.is_paused:
+            return  # หยุดนับเวลาหากเกมจบหรือหยุดชั่วคราว
 
         self.time_elapsed += dt  # เพิ่มเวลาที่ผ่านไป
         time_left = max(
@@ -316,17 +419,37 @@ class GameScreen(Screen):
 
     def show_game_over(self):
         # แสดงผลลัพธ์เมื่อเกมจบ
-        game_over_label = Label(
-            text=f"Game Over!\nYour Score: {self.score}",
-            font_size=40,
-            color=(1, 0, 0, 1),
-            size_hint=(None, None),
-            size=(600, 200),
-            pos_hint={"center_x": 0.5, "center_y": 0.5},
-            halign="center",
-            valign="middle",
-        )
-        self.layout.add_widget(game_over_label)
+        self.game_over_label.text = f"Game Over!\nYour Score: {self.score}"
+        self.game_over_label.opacity = 1  # แสดงข้อความ Game Over
+
+        # แสดงปุ่ม Play Again และ Back to Main
+        self.play_again_button.opacity = 1
+        self.back_to_main_button.opacity = 1
+
+    def play_again(self, instance):
+        # รีเซ็ตเกมและเริ่มเล่นใหม่
+        self.game_over = False
+        self.time_elapsed = 0
+        self.score = 0
+        self.score_label.text = f"Score: {self.score}"
+        self.time_label.text = "Time: 30:00"
+        self.game_over_label.opacity = 0
+        self.play_again_button.opacity = 0
+        self.back_to_main_button.opacity = 0
+
+        # ลบของที่หล่นลงมาทั้งหมด
+        for obj in self.falling_objects:
+            self.layout.canvas.remove(obj.rect)
+        self.falling_objects.clear()
+
+        # เริ่มเวลาใหม่
+        Clock.schedule_interval(self.spawn_falling_object, 1)
+        Clock.schedule_interval(self.update_falling_objects, 1.0 / 60.0)
+        Clock.schedule_interval(self.update_time, 1)
+
+    def back_to_main(self, instance):
+        # กลับไปที่หน้าหลัก
+        self.manager.current = "main_screen"
 
 
 class GameApp(App):
@@ -345,6 +468,8 @@ class GameApp(App):
 
         game_screen = GameScreen(name="game_screen")
         sm.add_widget(game_screen)
+
+        # เริ่มต้นที่หน้าแรก
 
         # เริ่มต้นที่หน้าแรก
         sm.current = "main_screen"

@@ -26,7 +26,7 @@ class MainScreen(Screen):
 
         # Background image with stretching and keeping ratio
         background = Image(
-            source=r"C:\Users\Acer\Downloads\พล.jpg",
+            source=r"C:\Users\Acer\Downloads\พื้นหลังช้าง.jpg",
             size_hint=(1, 1),  # ขยายให้เต็มหน้าจอ
             allow_stretch=True,  # อนุญาตให้ขยายภาพ
             keep_ratio=False,  # ไม่รักษาสัดส่วนภาพ
@@ -62,7 +62,7 @@ class CharacterSelectionScreen(Screen):
 
         # Background image with stretching and keeping ratio
         background = Image(
-            source=r"C:\Users\Acer\Downloads\พื้นหลัง23.jpg",
+            source=r"C:\Users\Acer\Downloads\ฟ้า.jpg",
             size_hint=(1, 1),  # ขยายให้เต็มหน้าจอ
             allow_stretch=True,  # อนุญาตให้ขยายภาพ
             keep_ratio=False,  # ไม่รักษาสัดส่วนภาพ
@@ -331,21 +331,31 @@ class GameScreen(Screen):
         x = random.randint(0, int(Window.width - 50))
         y = Window.height  # เริ่มจากด้านบนของหน้าจอ
 
-        # สุ่มเลือกประเภทของที่หล่นลงมา (โบนัสหรือของที่ไม่ดี)
         random_value = random.random()
-        if random_value < 0.4:  # 40% โอกาสเป็นโบนัส
-            if random.random() < 0.5:  # 50% โอกาสเลือกรูปภาพมังคุด1 หรือมังคุด2
+        if random_value < 0.4:  # 40% โอกาสเป็นโบนัส (มังคุด)
+            # สุ่มเลือกรูปโบนัส (มังคุด1, มังคุด2, มังคุด3)
+            bonus_type = random.choice(["มังคุด1", "มังคุด2", "มังคุด3"])
+            if bonus_type == "มังคุด1":
                 source = "images/มังคุด1.png"
                 score_change = 10  # เพิ่มคะแนน
-            else:
+            elif bonus_type == "มังคุด2":
                 source = "images/มังคุด2.png"
                 score_change = 15  # เพิ่มคะแนน
-        elif random_value < 0.7:  # 30% โอกาสเป็นของที่ไม่ดี (ลดคะแนน -10)
+            elif bonus_type == "มังคุด3":
+                source = "images/มังคุด3.png"
+                score_change = 20  # เพิ่มคะแนน
+        elif random_value < 0.6:  # 20% โอกาสเป็นของที่ไม่ดี (ลำไย)
             source = "images/ลำไย.png"
             score_change = -10  # ลดคะแนน
-        else:  # 30% โอกาสเป็นของที่ไม่ดีอีกชนิด (ลดคะแนน -20)
+        elif random_value < 0.7:  # 10% โอกาสเป็นของที่ไม่ดี (เงาะ)
             source = "images/เงาะ.png"
-            score_change = -20  # ลดคะแนนเพิ่มเติม
+            score_change = -15  # ลดคะแนน
+        elif random_value < 0.8:  # 10% โอกาสเป็นของที่ไม่ดี (มะม่วง)
+            source = "images/สัปปะรด.png"
+            score_change = -20  # ลดคะแนน
+        else:  # 20% โอกาสเป็นของที่ไม่ดีอีกชนิด (มะม่วง2)
+            source = "images/มะม่วง.png"  # เพิ่มของลบคะแนนใหม่
+            score_change = -25  # ลดคะแนนเพิ่มเติม
 
         # สร้างของที่หล่นลงมา
         obj = FallingObject(

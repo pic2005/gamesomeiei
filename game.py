@@ -553,7 +553,7 @@ class GameScreen(Screen):
         self.layout.add_widget(background)
 
         # กำหนดขนาดตัวละคร
-        self.hero_size = (300, 250)
+        self.hero_size = (200, 150)
 
         # วาดตัวละครด้วย canvas ของ FloatLayout
         with self.layout.canvas:

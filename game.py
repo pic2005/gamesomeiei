@@ -10,15 +10,6 @@ from kivy.graphics import Rectangle
 import random
 
 
-class FallingObject:
-    def __init__(self, pos, size, source, score_change):
-        self.pos = pos
-        self.size = size
-        self.source = source
-        self.speed = random.randint(100, 300)  # ความเร็วในการตก
-        self.score_change = score_change  # ผลต่อคะแนน (+10, -10, หรือ -20)
-
-
 class MainScreen(Screen):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
@@ -26,12 +17,33 @@ class MainScreen(Screen):
 
         # Background image with stretching and keeping ratio
         background = Image(
-            source=r"C:\Users\Acer\Downloads\พื้นหลังช้าง.jpg",
+            source=r"C:\Users\Acer\Downloads\ฟ้า.jpg",
             size_hint=(1, 1),  # ขยายให้เต็มหน้าจอ
             allow_stretch=True,  # อนุญาตให้ขยายภาพ
             keep_ratio=False,  # ไม่รักษาสัดส่วนภาพ
         )
         layout.add_widget(background)
+
+        # Character image
+        self.character = Image(
+            source=r"C:\Users\Acer\Downloads\ช้าง.png",
+            size_hint=(None, None),
+            size=(1000, 1000),
+            pos_hint={"center_x": 0.5, "center_y": 0.6},
+        )
+        layout.add_widget(self.character)
+
+        # เพิ่มชื่อเกม
+        game_title = Label(
+            text="Khud Kat Game",  # ชื่อเกม
+            font_size=48,  # ขนาดฟอนต์
+            color=(1, 1, 1, 1),  # สีขาว
+            size_hint=(None, None),
+            size=(400, 100),  # ขนาด Label
+            pos_hint={"center_x": 0.5, "top": 0.95},  # ตำแหน่งด้านบนกลาง
+            bold=True,  # ตัวหนา
+        )
+        layout.add_widget(game_title)
 
         # Start button
         start_button = Button(
@@ -48,7 +60,101 @@ class MainScreen(Screen):
         start_button.bind(on_press=self.start_game)
         layout.add_widget(start_button)
 
+        # ตัวแปรสำหรับเก็บของที่หล่นลงมา
+        self.falling_objects = []
+
+        # สร้างของที่หล่นลงมาเป็นระยะ
+        Clock.schedule_interval(self.spawn_falling_object, 1)
+
+        # อัพเดทของที่หล่นลงมาทุกเฟรม
+        Clock.schedule_interval(self.update_falling_objects, 1.0 / 60.0)
+
+        # เพิ่มข้อความที่ปรากฏและหายไป
+        self.floating_labels = []
+        self.add_floating_labels(layout)
+
         self.add_widget(layout)
+
+    def add_floating_labels(self, layout):
+        # ข้อความที่ต้องการแสดง
+        messages = [
+            "Welcome!",
+            "Help Khud Kat!",
+            "Hungry!",
+        ]
+
+        # สร้าง Label สำหรับข้อความแต่ละอัน
+        for i, message in enumerate(messages):
+            label = Label(
+                text=message,
+                font_size=24,
+                color=(0, 0, 0, 1),  # สีขาว
+                size_hint=(None, None),
+                size=(300, 50),
+                pos_hint={
+                    "center_x": random.uniform(0.2, 0.8),
+                    "center_y": random.uniform(0.3, 0.8),
+                },
+                opacity=0,  # เริ่มต้นด้วยการซ่อนข้อความ
+            )
+            layout.add_widget(label)
+            self.floating_labels.append(label)
+
+        # เริ่มแอนิเมชันข้อความ
+        Clock.schedule_interval(self.update_floating_labels, 2.0 / 60.0)
+
+    def update_floating_labels(self, dt):
+        # อัพเดทข้อความที่ปรากฏและหายไป
+        for label in self.floating_labels:
+            # สุ่มตำแหน่งใหม่
+            if random.random() < 0.01:  # ความน่าจะเป็นที่ข้อความจะเคลื่อนที่
+                label.pos_hint = {
+                    "center_x": random.uniform(0.2, 0.8),
+                    "center_y": random.uniform(0.3, 0.8),
+                }
+
+            # สุ่มความโปร่งใส (opacity)
+            if random.random() < 0.02:  # ความน่าจะเป็นที่ข้อความจะปรากฏหรือหายไป
+                label.opacity = 1 if label.opacity == 0 else 0
+
+    def spawn_falling_object(self, dt):
+        # สุ่มตำแหน่งเริ่มต้นบนแกน X
+        x = random.randint(0, int(Window.width - 50))
+        y = Window.height  # เริ่มจากด้านบนของหน้าจอ
+
+        # สุ่มเลือกรูปภาพของที่หล่นลงมา
+        source = random.choice(
+            [
+                "images/มังคุด3.png",
+                "images/ก้อนเมฆ.png",
+            ]
+        )
+
+        # สร้างของที่หล่นลงมา
+        obj = FallingObject(
+            pos=(x, y),
+            size=(70, 70),  # ขนาดของของที่หล่นลงมา
+            source=source,
+            score_change=0,  # ไม่นับคะแนน
+        )
+
+        # วาดของที่หล่นลงมาด้วย canvas
+        with self.canvas:
+            obj.rect = Rectangle(source=obj.source, pos=obj.pos, size=obj.size)
+
+        # เพิ่มของที่หล่นลงมาเข้าไปในลิสต์
+        self.falling_objects.append(obj)
+
+    def update_falling_objects(self, dt):
+        for obj in self.falling_objects[:]:  # ใช้ [:] เพื่อป้องกันปัญหาในการลบของจากลิสต์
+            # เคลื่อนที่ของที่หล่นลงมา
+            obj.pos = (obj.pos[0], obj.pos[1] - obj.speed * dt)
+            obj.rect.pos = obj.pos
+
+            # ลบของที่หล่นลงมาหากตกออกจากหน้าจอ
+            if obj.pos[1] + obj.size[1] < 0:
+                self.canvas.remove(obj.rect)
+                self.falling_objects.remove(obj)
 
     def start_game(self, instance):
         # ไปที่หน้าแนะนำตัวละคร
@@ -78,17 +184,28 @@ class CharacterSelectionScreen(Screen):
         )
         layout.add_widget(self.character)
 
-        # Game description label
+        # Game description label with a border
         game_description = Label(
             text="Hello, my name is Khud Kat.\nMy name comes from mangosteen.\nPlease help me collect a lot of fallen mangosteen,\nand I will be able to go home.",
             font_size=20,
             color=(0, 0, 0, 1),
             size_hint=(None, None),
-            size=(600, 200),
+            size=(500, 100),
             pos_hint={"center_x": 0.5, "center_y": 0.3},
             halign="center",
             valign="middle",
         )
+
+        # Create a canvas to draw a border around the label
+        with game_description.canvas.before:
+            self.border = Rectangle(
+                pos=game_description.pos,
+                size=game_description.size,
+            )
+
+        # Bind the border to the label's position and size
+        game_description.bind(pos=self.update_border, size=self.update_border)
+
         layout.add_widget(game_description)
 
         # GO button
@@ -115,15 +232,300 @@ class CharacterSelectionScreen(Screen):
         back_to_main_button.bind(on_press=self.back_to_main)
         layout.add_widget(back_to_main_button)
 
+        # ตัวแปรสำหรับเก็บของที่หล่นลงมา
+        self.falling_objects = []
+
+        # สร้างของที่หล่นลงมาเป็นระยะ
+        Clock.schedule_interval(self.spawn_falling_object, 1)
+
+        # อัพเดทของที่หล่นลงมาทุกเฟรม
+        Clock.schedule_interval(self.update_falling_objects, 1.0 / 60.0)
+
+        # เพิ่มข้อความที่ปรากฏและหายไป
+        self.floating_labels = []
+        self.add_floating_labels(layout)
+
         self.add_widget(layout)
 
+    def update_border(self, instance, value):
+        # Update the border's position and size when the label moves or resizes
+        self.border.pos = instance.pos
+        self.border.size = instance.size
+
+    def add_floating_labels(self, layout):
+        # ข้อความที่ต้องการแสดง
+        messages = [
+            "GO",
+            "Help Khud Kat!",
+            "Hungry!",
+        ]
+
+        # สร้าง Label สำหรับข้อความแต่ละอัน
+        for i, message in enumerate(messages):
+            label = Label(
+                text=message,
+                font_size=24,
+                color=(0, 0, 0, 1),  # สีขาว
+                size_hint=(None, None),
+                size=(300, 50),
+                pos_hint={
+                    "center_x": random.uniform(0.2, 0.8),
+                    "center_y": random.uniform(0.3, 0.8),
+                },
+                opacity=0,  # เริ่มต้นด้วยการซ่อนข้อความ
+            )
+            layout.add_widget(label)
+            self.floating_labels.append(label)
+
+        # เริ่มแอนิเมชันข้อความ
+        Clock.schedule_interval(self.update_floating_labels, 2.0 / 60.0)
+
+    def update_floating_labels(self, dt):
+        # อัพเดทข้อความที่ปรากฏและหายไป
+        for label in self.floating_labels:
+            # สุ่มตำแหน่งใหม่
+            if random.random() < 0.01:  # ความน่าจะเป็นที่ข้อความจะเคลื่อนที่
+                label.pos_hint = {
+                    "center_x": random.uniform(0.2, 0.8),
+                    "center_y": random.uniform(0.3, 0.8),
+                }
+
+            # สุ่มความโปร่งใส (opacity)
+            if random.random() < 0.02:  # ความน่าจะเป็นที่ข้อความจะปรากฏหรือหายไป
+                label.opacity = 1 if label.opacity == 0 else 0
+
+    def spawn_falling_object(self, dt):
+        # สุ่มตำแหน่งเริ่มต้นบนแกน X
+        x = random.randint(0, int(Window.width - 50))
+        y = Window.height  # เริ่มจากด้านบนของหน้าจอ
+
+        # สุ่มเลือกรูปภาพของที่หล่นลงมา
+        source = random.choice(
+            [
+                "images/มังคุด3.png",
+                "images/ก้อนเมฆ.png",
+            ]
+        )
+
+        # สร้างของที่หล่นลงมา
+        obj = FallingObject(
+            pos=(x, y),
+            size=(70, 70),  # ขนาดของของที่หล่นลงมา
+            source=source,
+            score_change=0,  # ไม่นับคะแนน
+        )
+
+        # วาดของที่หล่นลงมาด้วย canvas
+        with self.canvas:
+            obj.rect = Rectangle(source=obj.source, pos=obj.pos, size=obj.size)
+
+        # เพิ่มของที่หล่นลงมาเข้าไปในลิสต์
+        self.falling_objects.append(obj)
+
+    def update_falling_objects(self, dt):
+        for obj in self.falling_objects[:]:  # ใช้ [:] เพื่อป้องกันปัญหาในการลบของจากลิสต์
+            # เคลื่อนที่ของที่หล่นลงมา
+            obj.pos = (obj.pos[0], obj.pos[1] - obj.speed * dt)
+            obj.rect.pos = obj.pos
+
+            # ลบของที่หล่นลงมาหากตกออกจากหน้าจอ
+            if obj.pos[1] + obj.size[1] < 0:
+                self.canvas.remove(obj.rect)
+                self.falling_objects.remove(obj)
+
     def go_to_game(self, instance):
-        # ไปที่หน้าเกม
-        self.manager.current = "game_screen"
+        # ไปที่หน้าอธิบายเกม (Game Explanation Screen)
+        self.manager.current = "game_explanation_screen"
 
     def back_to_main(self, instance):
         # กลับไปที่หน้าแรก
         self.manager.current = "main_screen"
+
+
+class GameExplanationScreen(Screen):
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        layout = FloatLayout()
+
+        # Background image
+        background = Image(
+            source=r"C:\Users\Acer\Downloads\ฟ้า.jpg",  # เปลี่ยนเป็น path ของภาพพื้นหลัง
+            size_hint=(1, 1),
+            allow_stretch=True,
+            keep_ratio=False,
+        )
+        layout.add_widget(background)
+
+        # Game explanation label
+        explanation_label = Label(
+            text="Game Rules:\n\n"
+            "1. Help Khud Kat collect as many mangosteens as possible.\n"
+            "2. Avoid bad fruits like lychee and rambutan.\n"
+            "3. You have 30 seconds to collect as many points as you can.\n"
+            "4. Use the 'A' and 'D' keys to move left and right.\n"
+            "5. Good luck!",
+            font_size=20,
+            color=(0, 0, 0, 1),
+            size_hint=(None, None),
+            size=(600, 300),
+            pos_hint={"center_x": 0.5, "center_y": 0.6},
+            halign="center",
+            valign="middle",
+        )
+        layout.add_widget(explanation_label)
+
+        # Next button (to go to the game screen)
+        next_button = Button(
+            text="Next",
+            font_size=24,
+            size_hint=(None, None),
+            size=(200, 100),
+            pos_hint={"center_x": 0.5, "center_y": 0.2},
+            background_color=(0.8, 0.4, 0.4, 1),
+        )
+        next_button.bind(on_press=self.go_to_game)
+        layout.add_widget(next_button)
+
+        # Back button (to return to the character selection screen)
+        back_button = Button(
+            text="Back",
+            font_size=20,
+            size_hint=(None, None),
+            size=(100, 50),
+            pos_hint={"x": 0.02, "top": 0.1},
+            background_color=(0.5, 0.5, 0.5, 1),
+        )
+        back_button.bind(on_press=self.back_to_character)
+        layout.add_widget(back_button)
+
+        self.add_widget(layout)
+
+    def go_to_game(self, instance):
+        # ไปที่หน้าเกม (Game Screen)
+        self.manager.current = "game_screen"
+
+    def back_to_character(self, instance):
+        # กลับไปที่หน้าอธิบายตัวละคร (Character Selection Screen)
+        self.manager.current = "character_screen"
+
+
+class GameExplanationScreen(Screen):
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        layout = FloatLayout()
+
+        # Background image
+        background = Image(
+            source=r"C:\Users\Acer\Downloads\ฟ้า.jpg",  # เปลี่ยนเป็น path ของภาพพื้นหลัง
+            size_hint=(1, 1),
+            allow_stretch=True,
+            keep_ratio=False,
+        )
+        layout.add_widget(background)
+
+        # Game explanation label
+        self.explanation_label = Label(
+            text="Game Rules:\n\n"
+            "1. Help Khud Kat collect as many mangosteens as possible.\n"
+            "2. Avoid bad fruits like lychee and rambutan.\n"
+            "3. You have 30 seconds to collect as many points as you can.\n"
+            "4. Use the 'A' and 'D' keys to move left and right.\n"
+            "5. Good luck!",
+            font_size=20,
+            color=(0, 0, 0, 1),
+            size_hint=(None, None),
+            size=(600, 300),
+            pos_hint={"center_x": 0.5, "center_y": 0.6},
+            halign="center",
+            valign="middle",
+        )
+        layout.add_widget(self.explanation_label)
+
+        # Countdown label (ซ่อนไว้ในตอนแรก)
+        self.countdown_label = Label(
+            text="",
+            font_size=100,
+            color=(1, 0, 0, 1),  # สีแดง
+            size_hint=(None, None),
+            size=(200, 200),
+            pos_hint={"center_x": 0.5, "center_y": 0.5},
+            opacity=0,  # ซ่อนไว้ในตอนแรก
+        )
+        layout.add_widget(self.countdown_label)
+
+        # Next button (to go to the game screen)
+        self.next_button = Button(
+            text="Next",
+            font_size=24,
+            size_hint=(None, None),
+            size=(200, 100),
+            pos_hint={"center_x": 0.5, "center_y": 0.2},
+            background_color=(0.8, 0.4, 0.4, 1),
+        )
+        self.next_button.bind(on_press=self.start_countdown)  # เปลี่ยนเป็นเริ่มนับถอยหลัง
+        layout.add_widget(self.next_button)
+
+        # Back button (to return to the character selection screen)
+        back_button = Button(
+            text="Back",
+            font_size=20,
+            size_hint=(None, None),
+            size=(100, 50),
+            pos_hint={"x": 0.02, "top": 0.1},
+            background_color=(0.5, 0.5, 0.5, 1),
+        )
+        back_button.bind(on_press=self.back_to_character)
+        layout.add_widget(back_button)
+
+        self.add_widget(layout)
+
+        # ตัวแปรสำหรับนับถอยหลัง
+        self.countdown_value = 3  # เริ่มนับจาก 3
+        self.countdown_active = False  # สถานะการนับถอยหลัง
+
+    def start_countdown(self, instance):
+        # ซ่อนปุ่ม Next และข้อความอธิบายเกม
+        self.next_button.opacity = 0
+        self.explanation_label.opacity = 0
+
+        # แสดง Label นับถอยหลัง
+        self.countdown_label.opacity = 1
+        self.countdown_label.text = str(self.countdown_value)
+
+        # เริ่มนับถอยหลัง
+        self.countdown_active = True
+        Clock.schedule_interval(self.update_countdown, 0.5)  # อัพเดททุก 1 วินาที
+
+    def update_countdown(self, dt):
+        # อัพเดทการนับถอยหลัง
+        if self.countdown_value > 0:
+            self.countdown_label.text = str(self.countdown_value)
+            self.countdown_value -= 1
+        else:
+            # เมื่อนับถอยหลังเสร็จสิ้น
+            self.countdown_label.text = "GO!"
+            Clock.schedule_once(self.go_to_game, 1)  # รอ 1 วินาทีแล้วเริ่มเกม
+
+    def go_to_game(self, dt):
+        # หยุดการนับถอยหลัง
+        self.countdown_active = False
+        Clock.unschedule(self.update_countdown)
+
+        # ไปที่หน้าเกม (Game Screen)
+        self.manager.current = "game_screen"
+
+    def back_to_character(self, instance):
+        # กลับไปที่หน้าอธิบายตัวละคร (Character Selection Screen)
+        self.manager.current = "character_screen"
+
+
+class FallingObject:
+    def __init__(self, pos, size, source, score_change):
+        self.pos = pos
+        self.size = size
+        self.source = source
+        self.speed = random.randint(100, 300)  # ความเร็วในการตก
+        self.score_change = score_change  # ผลต่อคะแนน (+10, -10, หรือ -20)
 
 
 class GameScreen(Screen):
@@ -465,21 +867,22 @@ class GameScreen(Screen):
 class GameApp(App):
     def build(self):
         # ตั้งค่าขนาดหน้าจอเริ่มต้น
-        Window.size = (800, 600)  # ตัวอย่างขนาด 800x600 พิกเซล
+        Window.size = (800, 600)
 
         sm = ScreenManager()
 
-        # เพิ่มหน้าแรก, หน้าแนะนำตัวละคร, และหน้าควบคุมตัวละคร
+        # เพิ่มหน้าจอต่าง ๆ
         main_screen = MainScreen(name="main_screen")
         sm.add_widget(main_screen)
 
         character_screen = CharacterSelectionScreen(name="character_screen")
         sm.add_widget(character_screen)
 
+        game_explanation_screen = GameExplanationScreen(name="game_explanation_screen")
+        sm.add_widget(game_explanation_screen)
+
         game_screen = GameScreen(name="game_screen")
         sm.add_widget(game_screen)
-
-        # เริ่มต้นที่หน้าแรก
 
         # เริ่มต้นที่หน้าแรก
         sm.current = "main_screen"
